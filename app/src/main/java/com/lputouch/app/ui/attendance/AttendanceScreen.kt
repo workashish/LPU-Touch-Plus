@@ -98,7 +98,7 @@ fun AttendanceScreen(
                         AttendanceSummaryBanner(items)
                     }
 
-                    items(items, key = { it.courseCode ?: "${it.courseName}-${it.attendanceDay}" }) { a ->
+                    items(items, key = { it.courseCode ?: "${it.courseName}-${it.courseType}" }) { a ->
                         AttendanceCard(a, onClick = {
                             a.courseCode?.let { code -> onViewDetail?.invoke(code) }
                         })
@@ -111,7 +111,7 @@ fun AttendanceScreen(
 
 @Composable
 private fun AttendanceSummaryBanner(items: List<AttendanceItem>) {
-    val above = items.count { (it.totalAttendance?.replace("%", "")?.trim()?.toDoubleOrNull() ?: 0.0) >= 75.0 }
+    val above = items.count { ((it.totalPerc ?: it.totalAttendance)?.replace("%", "")?.trim()?.toDoubleOrNull() ?: 0.0) >= 75.0 }
     val below = items.size - above
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -138,7 +138,8 @@ private fun SummaryChip(label: String, value: String, color: Color) {
 
 @Composable
 private fun AttendanceCard(a: AttendanceItem, onClick: () -> Unit) {
-    val total = a.totalAttendance?.replace("%", "")?.trim()?.toDoubleOrNull()
+    val totalStr = a.totalPerc ?: a.totalAttendance
+    val total = totalStr?.replace("%", "")?.trim()?.toDoubleOrNull()
     val progress = ((total ?: 0.0) / 100.0).toFloat().coerceIn(0f, 1f)
     val color = when {
         total == null -> MaterialTheme.colorScheme.primary
@@ -149,15 +150,10 @@ private fun AttendanceCard(a: AttendanceItem, onClick: () -> Unit) {
 
     // Classes needed to reach 75%
     val classesNeeded = if (total != null && total < 75.0) {
-        // If current = p%, assume p = attended/total_lectures
+        val totalLectures = a.totalDelv?.toDoubleOrNull() ?: 100.0
+        val attended = a.totalAttd?.toDoubleOrNull() ?: (total * totalLectures / 100.0)
         // We need (attended + x) / (total_lectures + x) >= 0.75
-        // Solve: attended + x >= 0.75*(total_lectures + x)
-        // x*(1-0.75) >= 0.75*total_lectures - attended
-        // x >= (0.75*total_lectures - attended) / 0.25
-        // But we only have %age, so work with a hypothetical 100 lecture base
-        val totalLectures = 100.0
-        val attended = total
-        val needed = ceil((0.75 * totalLectures - attended) / 0.25).toInt().coerceAtLeast(0)
+        val needed = kotlin.math.ceil((0.75 * totalLectures - attended) / 0.25).toInt().coerceAtLeast(0)
         needed
     } else null
 
@@ -182,7 +178,7 @@ private fun AttendanceCard(a: AttendanceItem, onClick: () -> Unit) {
                     }
                 }
                 Text(
-                    text = a.totalAttendance ?: "—",
+                    text = if (totalStr != null) "$totalStr%" else "—",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = color,
@@ -196,14 +192,24 @@ private fun AttendanceCard(a: AttendanceItem, onClick: () -> Unit) {
                 color = color,
                 trackColor = color.copy(alpha = 0.15f),
             )
-            if (!a.theoryAttendance.isNullOrBlank() || !a.practicalAttendance.isNullOrBlank()) {
-                Spacer(Modifier.height(8.dp))
+            
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                if (a.totalDelv != null && a.totalAttd != null) {
+                    Text("Attended: ${a.totalAttd} / ${a.totalDelv}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                a.courseType?.takeIf { it.isNotBlank() }?.let {
+                    Text("Type: $it", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            if (!a.faculty.isNullOrBlank() || !a.room.isNullOrBlank()) {
+                Spacer(Modifier.height(4.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    a.theoryAttendance?.takeIf { it.isNotBlank() }?.let {
-                        Text("Theory: $it", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    a.faculty?.takeIf { it.isNotBlank() }?.let {
+                        Text("Faculty: $it", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    a.practicalAttendance?.takeIf { it.isNotBlank() }?.let {
-                        Text("Practical: $it", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    a.room?.takeIf { it.isNotBlank() }?.let {
+                        Text("Room: $it", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }

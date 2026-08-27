@@ -85,16 +85,19 @@ data class ResultItem(
 
 /** GET /umswebservice.svc/StudentAttendanceForServiceNew/{uid}/{token}/{deviceId} */
 data class AttendanceItem(
-    @SerializedName("AttendanceDay") val attendanceDay: String? = null,
-    @SerializedName("AttendanceTime") val attendanceTime: String? = null,
     @SerializedName("CourseCode") val courseCode: String? = null,
     @SerializedName("CourseName") val courseName: String? = null,
-    @SerializedName("Description") val description: String? = null,
-    @SerializedName("Day") val day: Int? = null,
+    @SerializedName("CourseType") val courseType: String? = null,
+    @SerializedName("Faculty") val faculty: String? = null,
+    @SerializedName("Room") val room: String? = null,
+    @SerializedName("Section") val section: String? = null,
+    @SerializedName("Total_Attd") val totalAttd: String? = null,
+    @SerializedName("Total_Delv") val totalDelv: String? = null,
+    @SerializedName("Total_Perc") val totalPerc: String? = null,
+    
+    // Legacy fallbacks just in case
     @SerializedName("SubjectName") val subjectName: String? = null,
     @SerializedName("TotalAttendance") val totalAttendance: String? = null,
-    @SerializedName("TheoryAttendance") val theoryAttendance: String? = null,
-    @SerializedName("PracticalAttendance") val practicalAttendance: String? = null,
 )
 
 /** GET /umswebservice.svc/StudentTimeTableForService/{uid}/{token}/{deviceId} */

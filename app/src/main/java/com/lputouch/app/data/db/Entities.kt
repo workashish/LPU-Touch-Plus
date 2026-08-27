@@ -26,9 +26,13 @@ data class CachedResultEntity(
 data class CachedAttendanceEntity(
     @PrimaryKey val courseCode: String,
     val courseName: String,
-    val totalAttendance: String,
-    val theoryAttendance: String,
-    val practicalAttendance: String,
+    val courseType: String,
+    val faculty: String,
+    val room: String,
+    val section: String,
+    val totalAttd: String,
+    val totalDelv: String,
+    val totalPerc: String,
     val cachedAt: Long = System.currentTimeMillis(),
 )
 

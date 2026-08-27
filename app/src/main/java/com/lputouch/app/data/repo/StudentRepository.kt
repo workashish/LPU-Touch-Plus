@@ -173,11 +173,15 @@ class StudentRepository(
                 db.attendanceDao().insertAll(
                     items.map {
                         CachedAttendanceEntity(
-                            courseCode = it.courseCode ?: it.subjectName ?: "${it.courseName}-${it.attendanceDay}",
+                            courseCode = it.courseCode ?: it.subjectName ?: "",
                             courseName = it.courseName ?: it.subjectName ?: "",
-                            totalAttendance = it.totalAttendance ?: "",
-                            theoryAttendance = it.theoryAttendance ?: "",
-                            practicalAttendance = it.practicalAttendance ?: "",
+                            courseType = it.courseType ?: "",
+                            faculty = it.faculty ?: "",
+                            room = it.room ?: "",
+                            section = it.section ?: "",
+                            totalAttd = it.totalAttd ?: "",
+                            totalDelv = it.totalDelv ?: "",
+                            totalPerc = it.totalPerc ?: "",
                         )
                     }
                 )
@@ -187,9 +191,13 @@ class StudentRepository(
             AttendanceItem(
                 courseCode = it.courseCode,
                 courseName = it.courseName,
-                totalAttendance = it.totalAttendance,
-                theoryAttendance = it.theoryAttendance,
-                practicalAttendance = it.practicalAttendance,
+                courseType = it.courseType,
+                faculty = it.faculty,
+                room = it.room,
+                section = it.section,
+                totalAttd = it.totalAttd,
+                totalDelv = it.totalDelv,
+                totalPerc = it.totalPerc,
             )
         }
     }
