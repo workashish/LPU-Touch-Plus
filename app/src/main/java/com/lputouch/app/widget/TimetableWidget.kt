@@ -50,7 +50,7 @@ class TimetableWidget : GlanceAppWidget() {
             .filter { it.day == appDay }
             .map {
                 val cCode = it.courseCode.takeIf { c -> c.isNotBlank() } 
-                    ?: Regex("C:\\s*:?\\s*([^ /]+)").find(it.description)?.groupValues?.get(1) 
+                    ?: Regex("(?:C:|Course:)\\s*([^ /]+)").find(it.description)?.groupValues?.get(1) 
                     ?: ""
                 val stitchedFaculty = it.facultyName.takeIf { f -> f.isNotBlank() } 
                     ?: attendanceMap[cCode]?.takeIf { f -> f.isNotBlank() } 
@@ -144,7 +144,7 @@ class TimetableWidget : GlanceAppWidget() {
         val desc = t.description.replace("\r", "").replace("\n", "").trim()
         val isAvailableShortly = desc.contains("available Shortly", ignoreCase = true)
         
-        val courseCodeFix = Regex("C:\\s*:?\\s*([^ /]+)").find(desc)?.groupValues?.get(1)
+        val courseCodeFix = Regex("(?:C:|Course:)\\s*([^ /]+)").find(desc)?.groupValues?.get(1)
         val roomFix = Regex("R:\\s*:?\\s*([^ /]+)").find(desc)?.groupValues?.get(1)
         
         val parts = desc.split("/")

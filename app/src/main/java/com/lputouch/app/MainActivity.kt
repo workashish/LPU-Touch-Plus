@@ -28,6 +28,7 @@ class MainActivity : FragmentActivity() {
         enableEdgeToEdge()
         val app = application as LPUTouchApp
         scheduleAnnouncementWorker()
+        com.lputouch.app.widget.TimetableWidgetReceiver.update(this)
         setContent {
             // Nullable initial: DataStore loads async — avoid flashing the login screen on restart.
             val loggedIn by app.sessionStore.loggedIn.collectAsState(initial = null)

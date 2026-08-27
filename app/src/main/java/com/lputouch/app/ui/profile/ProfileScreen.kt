@@ -134,7 +134,10 @@ fun ProfileScreen(
                                     .clip(CircleShape),
                                 contentAlignment = Alignment.Center,
                             ) {
-                                val picUrl = info?.studentPicture?.takeIf { it.isNotBlank() } ?: info?.picture
+                                val rawUrl = info?.studentPicture?.takeIf { it.isNotBlank() } ?: info?.picture
+                                val picUrl = rawUrl?.let { 
+                                    if (it.startsWith("/")) "https://ums.lpu.in$it" else it 
+                                }
                                 if (picUrl.isNullOrBlank()) {
                                     Box(
                                         modifier = Modifier
