@@ -28,12 +28,17 @@ fun FeeScreen(studentRepository: StudentRepository, onBack: () -> Unit) {
     var feeBalance by remember { mutableStateOf<List<FeeBalanceItem>>(emptyList()) }
     var feeExtension by remember { mutableStateOf<List<FeeExtensionItem>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
+    var error by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         loading = true
-        feeBalance = studentRepository.getFeeBalance()
-        feeExtension = studentRepository.getFeeExtensionPopup()
+        try {
+            feeBalance = studentRepository.getFeeBalance()
+            feeExtension = studentRepository.getFeeExtensionPopup()
+        } catch (e: Exception) {
+            error = e.message ?: "Failed to load fee data"
+        }
         loading = false
     }
 
@@ -50,6 +55,15 @@ fun FeeScreen(studentRepository: StudentRepository, onBack: () -> Unit) {
         }
     ) { padding ->
         if (loading) { LoadingState(Modifier.padding(padding)); return@Scaffold }
+
+        if (error != null && feeBalance.isEmpty() && feeExtension.isEmpty()) {
+            com.lputouch.app.ui.components.ErrorState(
+                message = error!!,
+                onRetry = { scope.launch { loading = true; try { feeBalance = studentRepository.getFeeBalance(); feeExtension = studentRepository.getFeeExtensionPopup() } catch (e: Exception) { error = e.message }; loading = false } },
+                modifier = Modifier.padding(padding),
+            )
+            return@Scaffold
+        }
 
         Column(
             modifier = Modifier

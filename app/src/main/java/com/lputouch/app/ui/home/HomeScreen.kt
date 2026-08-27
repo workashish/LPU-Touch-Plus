@@ -98,14 +98,19 @@ fun HomeScreen(
         if (!saved.isNullOrBlank()) studentName = saved
 
         launch {
-            val p = studentRepository.getStudentBasicInfo()
-            if (p != null && p.error.isNullOrBlank()) {
-                profile = p
-                p.studentName?.takeIf { it.isNotBlank() }?.let { studentName = it }
-                sessionStore.saveProfile(
-                    name = p.studentName ?: studentName,
-                    program = p.programName ?: "",
-                )
+            try {
+                val p = studentRepository.getStudentBasicInfo()
+                if (p != null && p.error.isNullOrBlank()) {
+                    profile = p
+                    p.studentName?.takeIf { it.isNotBlank() }?.let { studentName = it }
+                    sessionStore.saveProfile(
+                        name = p.studentName ?: studentName,
+                        program = p.programName ?: "",
+                    )
+                }
+            } catch (e: Exception) {
+                // Profile load failure is non-fatal for the home screen
+                android.util.Log.w("HomeScreen", "Failed to load profile", e)
             }
         }
 

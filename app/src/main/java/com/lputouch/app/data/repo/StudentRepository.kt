@@ -66,14 +66,29 @@ class StudentRepository(
      * session, silently re-logins (refreshes both JWT + UMS AccessToken) and retries once.
      * Returns null on failure — never returns an expired/empty server object.
      */
+    /**
+     * Returns true if the throwable indicates a session expiry (401, expired JWT, etc.).
+     * Other errors (520, 500, network timeouts) are NOT session issues.
+     */
+    private fun isSessionExpiredError(e: Throwable): Boolean {
+        if (e.message == "SESSION_EXPIRED") return true
+        if (e is retrofit2.HttpException) {
+            val code = e.code()
+            return code == 401 || code == 403
+        }
+        return false
+    }
+
     private suspend fun <T> withFreshSession(block: suspend (uid: String, token: String, deviceId: String) -> T?): T? {
         val (uid, token, deviceId) = session()
         if (uid.isEmpty()) return null
         val first = try {
             block(uid, token, deviceId)
         } catch (e: Exception) {
-            // SESSION_EXPIRED from OkHttp interceptor — skip straight to refresh
-            if (e.message == "SESSION_EXPIRED") null else null
+            // Only treat 401 / explicit session expiry as a refresh trigger.
+            // Other errors (520, 500, timeouts, etc.) must propagate so screens
+            // can show the real error message instead of silently returning null.
+            if (isSessionExpiredError(e)) null else throw e
         }
         if (first == null || isExpiredSession(first)) {
             if (authRepository.refreshSession()) {
@@ -82,12 +97,13 @@ class StudentRepository(
                 val retried = try {
                     block(uid2, token2, deviceId2)
                 } catch (e: Exception) {
-                    null
+                    // If retry also fails with a non-session error, propagate it
+                    if (isSessionExpiredError(e)) null else throw e
                 }
                 // Only accept the retry if it's real data, not another expired response.
                 return if (retried != null && !isExpiredSession(retried)) retried else null
             }
-            // Refresh failed — never surface the expired/empty object to the UI.
+            // Refresh failed — return null (UI shows empty state)
             return null
         }
         return first

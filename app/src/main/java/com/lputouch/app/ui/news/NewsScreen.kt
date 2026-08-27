@@ -33,11 +33,17 @@ fun NewsScreen(studentRepository: StudentRepository, onBack: () -> Unit) {
     var items by remember { mutableStateOf<List<NewsPost>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var refreshing by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
     suspend fun load() {
-        items = studentRepository.getNewsPosts()
+        error = null
+        try {
+            items = studentRepository.getNewsPosts()
+        } catch (e: Exception) {
+            error = e.message ?: "Failed to load news"
+        }
     }
 
     LaunchedEffect(Unit) {
@@ -57,6 +63,11 @@ fun NewsScreen(studentRepository: StudentRepository, onBack: () -> Unit) {
     ) { padding ->
         when {
             loading -> LoadingState(Modifier.padding(padding))
+            error != null && items.isEmpty() -> com.lputouch.app.ui.components.ErrorState(
+                message = error!!,
+                onRetry = { scope.launch { loading = true; load(); loading = false } },
+                modifier = Modifier.padding(padding),
+            )
             items.isEmpty() -> EmptyState("No news available", Modifier.padding(padding))
             else -> PullToRefreshBox(
                 isRefreshing = refreshing,

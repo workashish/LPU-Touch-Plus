@@ -135,10 +135,8 @@ fun ProfileScreen(
                                 contentAlignment = Alignment.Center,
                             ) {
                                 val rawUrl = info?.studentPicture?.takeIf { it.isNotBlank() } ?: info?.picture
-                                val picUrl = rawUrl?.let { 
-                                    if (it.startsWith("/")) "https://ums.lpu.in$it" else it 
-                                }
-                                if (picUrl.isNullOrBlank()) {
+                                val picUrl = resolveProfilePicUrl(rawUrl)
+                                if (picUrl == null) {
                                     Box(
                                         modifier = Modifier
                                             .fillMaxSize()
@@ -193,6 +191,35 @@ fun ProfileScreen(
                 }
             }
         }
+    }
+}
+
+/**
+ * Resolves a profile picture string to a Coil-loadable URL.
+ * The server sends either:
+ * - A path like "/Content/Images/photo.jpg" → prepend https://ums.lpu.in
+ * - Raw base64 data like "/9j/4AAQ..." (JPEG) or "iVBORw..." (PNG) → data URI
+ */
+private fun resolveProfilePicUrl(raw: String?): String? {
+    if (raw.isNullOrBlank()) return null
+    val trimmed = raw.trim()
+    // Base64 JPEG starts with /9j/ or iVBOR (PNG) — but paths also start with /
+    // Distinguish: base64 strings are very long and contain only base64 chars after the prefix.
+    val isBase64 = (trimmed.startsWith("/9j/") || trimmed.startsWith("iVBOR") ||
+            trimmed.startsWith("data:image")) && trimmed.length > 500
+    return when {
+        trimmed.startsWith("data:") -> trimmed
+        isBase64 -> {
+            val mimeType = when {
+                trimmed.startsWith("/9j/") -> "image/jpeg"
+                trimmed.startsWith("iVBOR") -> "image/png"
+                else -> "image/jpeg"
+            }
+            "data:$mimeType;base64,$trimmed"
+        }
+        trimmed.startsWith("/") -> "https://ums.lpu.in$trimmed"
+        trimmed.startsWith("http") -> trimmed
+        else -> null
     }
 }
 
