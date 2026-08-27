@@ -5,7 +5,7 @@ local.properties
 .DS_Store
 build/
 captures/
-*.apk
 *.aab
+!LPUTouchPlus-*.apk
 *.keystore
 !debug.keystore
