@@ -52,6 +52,20 @@ data class StudentBasicInfo(
     @SerializedName("TimeTableLectureCount") val timetableLectureCount: String? = null,
 )
 
+/** GET Profile */
+data class ProfileSection(
+    @SerializedName("Header") val header: String? = null,
+    @SerializedName("Values") val values: List<ProfileValue>? = null,
+    @SerializedName("Error") val error: String? = null,
+)
+
+data class ProfileValue(
+    @SerializedName("Title") val title: String? = null,
+    @SerializedName("Value") val value: String? = null,
+)
+
+
+
 data class Address(
     @SerializedName("CityName") val cityName: String? = null,
     @SerializedName("Colony") val colony: String? = null,
@@ -65,6 +79,7 @@ data class Address(
 /** GET /api/Student/GetStudentResult */
 data class StudentResultResponse(
     @SerializedName("result") val result: List<ResultItem>? = null,
+    @SerializedName("failGradeDescription") val failGradeDescription: List<Any>? = null,
     @SerializedName("semester") val semester: String? = null,
 )
 

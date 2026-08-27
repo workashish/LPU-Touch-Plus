@@ -24,6 +24,7 @@ import com.lputouch.app.data.api.dto.MessagesHistoryResponse
 import com.lputouch.app.data.api.dto.PhoneContact
 import com.lputouch.app.data.api.dto.PlacementDrive
 import com.lputouch.app.data.api.dto.PopupMessage
+import com.lputouch.app.data.api.dto.ProfileSection
 import com.lputouch.app.data.api.dto.PvrResponse
 import com.lputouch.app.data.api.dto.RmsQuery
 import com.lputouch.app.data.api.dto.SeatingPlanItem
@@ -103,7 +104,7 @@ interface UmsApi {
         @Path("accessToken") accessToken: String,
         @Path("deviceId") deviceId: String,
         @Path("userId") userId: String,
-    ): List<StudentBasicInfo>
+    ): List<ProfileSection>
 
     @GET("umswebservice/umswebservice.svc/StudentMyMessagesForService/{userId}/{accessToken}/{deviceId}")
     suspend fun getMyMessages(
@@ -152,50 +153,12 @@ interface UmsApi {
         @Path("userId") userId: String,
     ): List<AdmissionDocument>
 
-    @GET("umswebservice/umswebservice.svc/GetFeeBalance/{userId}/{accessToken}/{deviceId}")
-    suspend fun getFeeBalance(
-        @Path("userId") userId: String,
-        @Path("accessToken") accessToken: String,
-        @Path("deviceId") deviceId: String,
-    ): List<FeeBalanceItem>
-
-    @GET("umswebservice/umswebservice.svc/Student/SeatingPlan")
-    suspend fun getSeatingPlan(
-        @Query("uid") userId: String,
-        @Query("token") accessToken: String,
-        @Query("deviceId") deviceId: String,
-    ): List<SeatingPlanItem>
-
-    @GET("umswebservice/umswebservice.svc/Student/GetLibraryData")
-    suspend fun getLibraryData(
-        @Query("uid") userId: String,
-        @Query("token") accessToken: String,
-    ): List<LibraryItem>
-
-    @GET("umswebservice/umswebservice.svc/Student/GetBusRoutes")
-    suspend fun getBusRoutes(
-        @Query("uid") userId: String,
-        @Query("token") accessToken: String,
-    ): List<BusRoute>
-
     @GET("umswebservice/umswebservice.svc/GetPopUpMessage/{userId}/{accessToken}/{deviceId}")
     suspend fun getPopupMessages(
         @Path("userId") userId: String,
         @Path("accessToken") accessToken: String,
         @Path("deviceId") deviceId: String,
     ): List<PopupMessage>
-
-    @GET("umswebservice/umswebservice.svc/Parent/GetHostelLeaveDetails")
-    suspend fun getHostelLeaveDetails(
-        @Query("uid") userId: String,
-        @Query("token") accessToken: String,
-    ): List<HostelLeaveItem>
-
-    @GET("umswebservice/umswebservice.svc/Parent/HostelLeaveBalance")
-    suspend fun getHostelLeaveBalance(
-        @Query("uid") userId: String,
-        @Query("token") accessToken: String,
-    ): HostelLeaveBalance
 
     @GET("umswebservice/umswebservice.svc/GetPhoneDirectory/{userId}/{accessToken}/{deviceId}")
     suspend fun getPhoneDirectory(
@@ -210,10 +173,4 @@ interface UmsApi {
         @Query("uid") userId: String,
         @Query("token") accessToken: String,
     ): List<LeaderboardEntry>
-
-    @GET("umswebservice/umswebservice.svc/Student/GetCalendar")
-    suspend fun getCalendar(
-        @Query("uid") userId: String,
-        @Query("token") accessToken: String,
-    ): List<CalendarEvent>
 }

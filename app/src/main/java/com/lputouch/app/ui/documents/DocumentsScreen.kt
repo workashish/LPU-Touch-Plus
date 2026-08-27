@@ -80,7 +80,7 @@ fun DocumentsScreen(studentRepository: StudentRepository, onBack: () -> Unit) {
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                items(items, key = { it.documentId ?: it.documentDescription ?: it.hashCode().toString() }) { doc ->
+                items(items, key = { it.documentDescription ?: it.hashCode().toString() }) { doc ->
                     DocumentCard(doc, onClick = { selectedDoc = doc })
                 }
             }
@@ -118,10 +118,6 @@ private fun DocumentCard(doc: AdmissionDocument, onClick: () -> Unit) {
             Spacer(Modifier.width(16.dp))
             Column(Modifier.weight(1f)) {
                 Text(doc.documentDescription ?: "Document", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                doc.remark?.takeIf { it.isNotBlank() }?.let {
-                    Spacer(Modifier.height(4.dp))
-                    Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
             }
             Spacer(Modifier.width(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {

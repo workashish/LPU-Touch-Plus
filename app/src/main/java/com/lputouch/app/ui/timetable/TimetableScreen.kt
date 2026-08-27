@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.Card
@@ -185,12 +186,13 @@ fun TimetableScreen(
 
 @Composable
 private fun TimetableCard(t: TimetableItem) {
-    val desc = t.description ?: ""
+    val desc = t.description?.replace("\r", "")?.replace("\n", "")?.trim() ?: ""
     val isAvailableShortly = desc.contains("available Shortly", ignoreCase = true)
     
-    val courseCodeMatch = Regex("C:([^ /\\r\\n]+)").find(desc)?.groupValues?.get(1)
-    val roomMatch = Regex("R:\\s*([^ /\\r\\n]+)").find(desc)?.groupValues?.get(1)
-    val sectionMatch = Regex("S:([^ /\\r\\n]+)").find(desc)?.groupValues?.get(1)
+    // Improved Regex to handle arbitrary spacing and newlines
+    val courseCodeMatch = Regex("C:\\s*([^ /]+)").find(desc)?.groupValues?.get(1)
+    val roomMatch = Regex("R:\\s*([^ /]+)").find(desc)?.groupValues?.get(1)
+    val sectionMatch = Regex("S:\\s*([^ /]+)").find(desc)?.groupValues?.get(1)
     
     val parts = desc.split("/")
     val type = parts.firstOrNull()?.trim()?.takeIf { it.isNotBlank() } ?: "Course"
@@ -200,34 +202,67 @@ private fun TimetableCard(t: TimetableItem) {
     val displayRoom = t.roomNo ?: roomMatch
     val displayFaculty = t.facultyName
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
-        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (!t.attendanceTime.isNullOrBlank()) {
-                Column(Modifier.width(100.dp)) {
-                    Box(
-                        modifier = Modifier
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
-                            .padding(horizontal = 10.dp, vertical = 6.dp)
-                    ) {
-                        Text(
-                            text = t.attendanceTime,
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+    if (isAvailableShortly) {
+        // Special Notice Card Design
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+            shape = RoundedCornerShape(16.dp),
+        ) {
+            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Filled.Info, 
+                    contentDescription = null, 
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(32.dp)
+                )
+                Spacer(Modifier.width(16.dp))
+                Column {
+                    Text(
+                        text = "Schedule Update",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = desc,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
                 }
-                Spacer(Modifier.width(8.dp))
             }
-            Column(Modifier.weight(1f)) {
-                Text(
-                    text = displayTitle,
-                    style = MaterialTheme.typography.titleMedium,
+        }
+    } else {
+        // Normal Class Card Design
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+            shape = RoundedCornerShape(16.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        ) {
+            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                if (!t.attendanceTime.isNullOrBlank()) {
+                    Column(Modifier.width(100.dp)) {
+                        Box(
+                            modifier = Modifier
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
+                                .padding(horizontal = 10.dp, vertical = 6.dp)
+                        ) {
+                            Text(
+                                text = t.attendanceTime,
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                    Spacer(Modifier.width(8.dp))
+                }
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = displayTitle,
+                        style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -283,4 +318,5 @@ private fun TimetableCard(t: TimetableItem) {
             }
         }
     }
+}
 }

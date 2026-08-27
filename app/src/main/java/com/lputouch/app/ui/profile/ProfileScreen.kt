@@ -15,13 +15,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
-import com.lputouch.app.data.api.dto.Address
-import com.lputouch.app.data.api.dto.StudentBasicInfo
+import com.lputouch.app.data.api.dto.ProfileSection
 import com.lputouch.app.data.repo.StudentRepository
 import com.lputouch.app.ui.components.ErrorState
 import com.lputouch.app.ui.components.LoadingState
@@ -33,7 +29,7 @@ fun ProfileScreen(
     studentRepository: StudentRepository,
     onBack: () -> Unit,
 ) {
-    var profile by remember { mutableStateOf<StudentBasicInfo?>(null) }
+    var profileSections by remember { mutableStateOf<List<ProfileSection>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var refreshing by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -42,7 +38,7 @@ fun ProfileScreen(
     suspend fun load() {
         error = null
         try {
-            profile = studentRepository.getProfile()
+            profileSections = studentRepository.getProfile()
         } catch (e: Exception) {
             error = e.message ?: "Failed to load"
         }
@@ -66,18 +62,18 @@ fun ProfileScreen(
             )
         },
     ) { padding ->
-        val p = profile
-        val usable = p?.takeIf { it.error.isNullOrBlank() && !it.studentName.isNullOrBlank() }
+        val sections = profileSections
+        val usable = sections.isNotEmpty()
         when {
             loading -> LoadingState(Modifier.padding(padding))
 
-            error != null && usable == null -> ErrorState(
+            error != null && !usable -> ErrorState(
                 message = error!!,
                 onRetry = { scope.launch { loading = true; load(); loading = false } },
                 modifier = Modifier.padding(padding),
             )
 
-            usable == null -> ErrorState(
+            !usable -> ErrorState(
                 message = "Could not load profile",
                 onRetry = { scope.launch { loading = true; load(); loading = false } },
                 modifier = Modifier.padding(padding),
@@ -95,6 +91,10 @@ fun ProfileScreen(
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
+                    val basicSection = sections.find { it.header.equals("Basic", ignoreCase = true) }
+                    val name = basicSection?.values?.find { it.title.equals("Name", ignoreCase = true) }?.value ?: "—"
+                    val regNo = basicSection?.values?.find { it.title.equals("Registration No.", ignoreCase = true) }?.value ?: ""
+
                     // Hero card
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -105,108 +105,40 @@ fun ProfileScreen(
                             modifier = Modifier.fillMaxWidth().padding(20.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
-                            // Profile photo (Coil or fallback)
-                            val photoUrl = p.studentPicture?.takeIf { it.isNotBlank() && it.startsWith("http") }
                             Box(
                                 modifier = Modifier.size(88.dp).clip(CircleShape),
                                 contentAlignment = Alignment.Center,
                             ) {
-                                if (photoUrl != null) {
-                                    AsyncImage(
-                                        model = photoUrl,
-                                        contentDescription = "Profile photo",
-                                        contentScale = ContentScale.Crop,
-                                        modifier = Modifier.fillMaxSize(),
-                                    )
-                                } else {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .background(MaterialTheme.colorScheme.primary),
-                                        contentAlignment = Alignment.Center,
-                                    ) {
-                                        Icon(
-                                            Icons.Filled.Person,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(48.dp),
-                                            tint = MaterialTheme.colorScheme.onPrimary,
-                                        )
-                                    }
-                                }
-                            }
-                            Spacer(Modifier.height(12.dp))
-                            Text(p.studentName ?: "—", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                            Text(p.registrationNumber ?: "", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-
-                            // Status chip
-                            p.studentStatus?.takeIf { it.isNotBlank() }?.let { status ->
-                                Spacer(Modifier.height(8.dp))
-                                Surface(
-                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                                    shape = RoundedCornerShape(20.dp),
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(MaterialTheme.colorScheme.primary),
+                                    contentAlignment = Alignment.Center,
                                 ) {
-                                    Text(
-                                        status,
-                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        fontWeight = FontWeight.SemiBold,
+                                    Icon(
+                                        Icons.Filled.Person,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(48.dp),
+                                        tint = MaterialTheme.colorScheme.onPrimary,
                                     )
                                 }
                             }
-
                             Spacer(Modifier.height(12.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                                StatChip("CGPA", p.cgpa ?: "—")
-                                StatChip("Attendance", p.aggAttendance ?: "—")
-                                p.currentBalance?.takeIf { it.isNotBlank() }?.let {
-                                    StatChip("Balance", it)
-                                }
-                            }
+                            Text(name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                            Text(regNo, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
 
-                    InfoCard("Academic", listOf(
-                        "Program" to (p.programName ?: "—"),
-                        "Session" to (p.admissionSession ?: "—"),
-                        "Batch" to (p.batchYear ?: "—"),
-                        "Section" to (p.section ?: "—"),
-                        "Category" to (p.categoryCode ?: "—"),
-                        "Term" to (p.termId?.takeIf { it.isNotBlank() } ?: "—"),
-                    ))
-
-                    InfoCard("Contact", listOf(
-                        "Email" to (p.studentEmail ?: "—"),
-                        "Mobile" to (p.studentMobile ?: "—"),
-                    ))
-
-                    InfoCard("Personal", listOf(
-                        "Father" to (p.fatherName ?: "—"),
-                        "Mother" to (p.motherName ?: "—"),
-                        "DOB" to (p.dateOfBirth ?: "—"),
-                        "Gender" to (p.gender ?: "—"),
-                        "Nationality" to (p.nationality ?: "—"),
-                        "Hostel" to (p.hostel?.takeIf { it.isNotBlank() } ?: "—"),
-                    ))
-
-                    // Addresses
-                    p.correspondingAddress?.let { addr ->
-                        AddressCard("Corresponding Address", addr)
-                    }
-                    p.permanentAddress?.let { addr ->
-                        AddressCard("Permanent Address", addr)
+                    // Dynamic Info Cards
+                    sections.filterNot { it.header.equals("Basic", ignoreCase = true) }.forEach { section ->
+                        InfoCard(
+                            title = section.header ?: "Details",
+                            rows = section.values?.map { Pair(it.title ?: "", it.value ?: "") } ?: emptyList()
+                        )
                     }
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun StatChip(label: String, value: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(value, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onPrimaryContainer, fontWeight = FontWeight.Bold)
-        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f))
     }
 }
 
@@ -236,35 +168,6 @@ private fun InfoCard(title: String, rows: List<Pair<String, String>>) {
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun AddressCard(title: String, addr: Address) {
-    val lines = listOfNotNull(
-        addr.houseNo?.takeIf { it.isNotBlank() },
-        addr.colony?.takeIf { it.isNotBlank() },
-        addr.cityName?.takeIf { it.isNotBlank() },
-        addr.districtName?.takeIf { it.isNotBlank() },
-        addr.stateName?.takeIf { it.isNotBlank() },
-        addr.pinCode?.takeIf { it.isNotBlank() },
-        addr.countryName?.takeIf { it.isNotBlank() },
-    )
-    if (lines.isEmpty()) return
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        shape = RoundedCornerShape(16.dp),
-    ) {
-        Column(Modifier.padding(16.dp)) {
-            Text(title, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(8.dp))
-            Text(
-                text = lines.joinToString(", "),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
         }
     }
 }

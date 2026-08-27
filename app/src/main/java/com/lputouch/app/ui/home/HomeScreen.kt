@@ -77,7 +77,7 @@ fun HomeScreen(
         if (!saved.isNullOrBlank()) studentName = saved
 
         launch {
-            val p = studentRepository.getProfile()
+            val p = studentRepository.getStudentBasicInfo()
             if (p != null && p.error.isNullOrBlank()) {
                 profile = p
                 p.studentName?.takeIf { it.isNotBlank() }?.let { studentName = it }
@@ -399,27 +399,51 @@ private fun StatChipItem(label: String, value: String, icon: ImageVector, color:
 
 @Composable
 private fun ClassWidgetCard(t: TimetableItem) {
+    val desc = t.description?.replace("\r", "")?.replace("\n", "")?.trim() ?: ""
+    val isAvailableShortly = desc.contains("available Shortly", ignoreCase = true)
+    
+    val courseCodeMatch = Regex("C:\\s*([^ /]+)").find(desc)?.groupValues?.get(1)
+    val roomMatch = Regex("R:\\s*([^ /]+)").find(desc)?.groupValues?.get(1)
+    
+    val parts = desc.split("/")
+    val type = parts.firstOrNull()?.trim()?.takeIf { it.isNotBlank() } ?: "Course"
+
+    val displayTitle = t.courseName ?: t.subjectName ?: t.courseCode ?: courseCodeMatch ?: if (isAvailableShortly) "Notice" else type
+    val displayRoom = t.roomNo ?: roomMatch
+    val displayFaculty = t.facultyName
+    
     Card(
         modifier = Modifier.width(220.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isAvailableShortly) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
+        ),
         shape = RoundedCornerShape(16.dp),
     ) {
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp))
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    Text(
-                        text = t.attendanceTime ?: "—",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        fontWeight = FontWeight.Bold
+                if (!isAvailableShortly && !t.attendanceTime.isNullOrBlank()) {
+                    Box(
+                        modifier = Modifier
+                            .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp))
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = t.attendanceTime,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                } else if (isAvailableShortly) {
+                    Icon(
+                        Icons.Filled.Info, 
+                        contentDescription = null, 
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
                 Spacer(Modifier.weight(1f))
-                t.roomNo?.takeIf { it.isNotBlank() }?.let {
+                displayRoom?.takeIf { it.isNotBlank() }?.let {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Filled.Place, contentDescription = null, modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.width(2.dp))
@@ -429,13 +453,24 @@ private fun ClassWidgetCard(t: TimetableItem) {
             }
             Spacer(Modifier.height(12.dp))
             Text(
-                text = t.courseName ?: t.subjectName ?: t.courseCode ?: "Course",
+                text = displayTitle,
                 style = MaterialTheme.typography.titleSmall,
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                color = if (isAvailableShortly) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
             )
+            if (isAvailableShortly) {
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = desc,
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
             Spacer(Modifier.height(8.dp))
-            t.facultyName?.takeIf { it.isNotBlank() }?.let {
+            displayFaculty?.takeIf { it.isNotBlank() }?.let {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Filled.Person, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.width(4.dp))

@@ -111,8 +111,9 @@ fun AttendanceScreen(
 
 @Composable
 private fun AttendanceSummaryBanner(items: List<AttendanceItem>) {
-    val above = items.count { ((it.totalPerc ?: it.totalAttendance)?.replace("%", "")?.trim()?.toDoubleOrNull() ?: 0.0) >= 75.0 }
-    val below = items.size - above
+    val validItems = items.filter { (it.totalDelv?.toDoubleOrNull() ?: 0.0) > 0 }
+    val above = validItems.count { ((it.totalPerc ?: it.totalAttendance)?.replace("%", "")?.trim()?.toDoubleOrNull() ?: 0.0) >= 75.0 }
+    val below = validItems.size - above
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
@@ -140,8 +141,11 @@ private fun SummaryChip(label: String, value: String, color: Color) {
 private fun AttendanceCard(a: AttendanceItem, onClick: () -> Unit) {
     val totalStr = a.totalPerc ?: a.totalAttendance
     val total = totalStr?.replace("%", "")?.trim()?.toDoubleOrNull()
+    val totalDelivered = a.totalDelv?.toDoubleOrNull() ?: 0.0
     val progress = ((total ?: 0.0) / 100.0).toFloat().coerceIn(0f, 1f)
+    
     val color = when {
+        totalDelivered == 0.0 -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
         total == null -> MaterialTheme.colorScheme.primary
         total >= 75.0 -> MaterialTheme.colorScheme.primary
         total >= 60.0 -> MaterialTheme.colorScheme.tertiary
@@ -149,11 +153,10 @@ private fun AttendanceCard(a: AttendanceItem, onClick: () -> Unit) {
     }
 
     // Classes needed to reach 75%
-    val classesNeeded = if (total != null && total < 75.0) {
-        val totalLectures = a.totalDelv?.toDoubleOrNull() ?: 100.0
-        val attended = a.totalAttd?.toDoubleOrNull() ?: (total * totalLectures / 100.0)
-        // We need (attended + x) / (total_lectures + x) >= 0.75
-        val needed = kotlin.math.ceil((0.75 * totalLectures - attended) / 0.25).toInt().coerceAtLeast(0)
+    val classesNeeded = if (total != null && total < 75.0 && totalDelivered > 0) {
+        val attended = a.totalAttd?.toDoubleOrNull() ?: (total * totalDelivered / 100.0)
+        // We need (attended + x) / (totalDelivered + x) >= 0.75
+        val needed = kotlin.math.ceil((0.75 * totalDelivered - attended) / 0.25).toInt().coerceAtLeast(0)
         needed
     } else null
 

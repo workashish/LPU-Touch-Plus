@@ -26,6 +26,7 @@ import com.lputouch.app.data.api.dto.MessagesHistoryRequest
 import com.lputouch.app.data.api.dto.NewsPost
 import com.lputouch.app.data.api.dto.PhoneContact
 import com.lputouch.app.data.api.dto.PlacementDrive
+import com.lputouch.app.data.api.dto.ProfileSection
 import com.lputouch.app.data.api.dto.ResultItem
 import com.lputouch.app.data.api.dto.RmsQuery
 import com.lputouch.app.data.api.dto.RplResult
@@ -106,7 +107,14 @@ class StudentRepository(
     private fun <T> filterExpired(items: List<T>): List<T> =
         items.filterNot { it is StudentBasicInfo && hasErrorField((it as StudentBasicInfo).error) }
 
-    suspend fun getProfile(): StudentBasicInfo? {
+    suspend fun getProfile(): List<ProfileSection> {
+        return withFreshSession { uid, token, deviceId ->
+            umsApi.getProfile(token, deviceId, uid)
+                .filterNot { hasErrorField(it.error) }
+        } ?: emptyList()
+    }
+
+    suspend fun getStudentBasicInfo(): StudentBasicInfo? {
         return withFreshSession { uid, token, deviceId ->
             umsApi.studentBasicInfo(uid, token, deviceId)
                 .filterNot { hasErrorField(it.error) }
@@ -331,9 +339,7 @@ class StudentRepository(
     }
 
     suspend fun getFeeBalance(): List<FeeBalanceItem> {
-        return withFreshSession { uid, token, deviceId ->
-            umsApi.getFeeBalance(uid, token, deviceId).takeIf { it.isNotEmpty() }
-        } ?: emptyList()
+        return emptyList()
     }
 
     suspend fun getFeeExtensionPopup(): List<FeeExtensionItem> {
@@ -341,33 +347,23 @@ class StudentRepository(
     }
 
     suspend fun getSeatingPlan(): List<SeatingPlanItem> {
-        return withFreshSession { uid, token, deviceId ->
-            umsApi.getSeatingPlan(uid, token, deviceId).takeIf { it.isNotEmpty() }
-        } ?: emptyList()
+        return emptyList()
     }
 
     suspend fun getLibraryData(): List<LibraryItem> {
-        return withFreshSession { uid, token, _ ->
-            umsApi.getLibraryData(uid, token).takeIf { it.isNotEmpty() }
-        } ?: emptyList()
+        return emptyList()
     }
 
     suspend fun getBusRoutes(): List<BusRoute> {
-        return withFreshSession { uid, token, _ ->
-            umsApi.getBusRoutes(uid, token).takeIf { it.isNotEmpty() }
-        } ?: emptyList()
+        return emptyList()
     }
 
     suspend fun getHostelLeaveHistory(): List<HostelLeaveItem> {
-        return withFreshSession { uid, token, _ ->
-            umsApi.getHostelLeaveDetails(uid, token).takeIf { it.isNotEmpty() }
-        } ?: emptyList()
+        return emptyList()
     }
 
     suspend fun getHostelLeaveBalance(): HostelLeaveBalance? {
-        return withFreshSession { uid, token, _ ->
-            umsApi.getHostelLeaveBalance(uid, token)
-        }
+        return null
     }
 
     suspend fun getPhoneDirectory(): List<PhoneContact> {
@@ -387,9 +383,7 @@ class StudentRepository(
     }
 
     suspend fun getCalendarEvents(): List<CalendarEvent> {
-        return withFreshSession { uid, token, _ ->
-            umsApi.getCalendar(uid, token).takeIf { it.isNotEmpty() }
-        } ?: emptyList()
+        return emptyList()
     }
 
     suspend fun getEduRevCategories(): List<EduRevCategory> {
