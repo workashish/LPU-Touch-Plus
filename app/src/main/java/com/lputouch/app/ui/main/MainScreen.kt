@@ -2,7 +2,7 @@ package com.lputouch.app.ui.main
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Assignment
 import androidx.compose.material.icons.filled.Campaign
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
@@ -29,8 +29,17 @@ import com.lputouch.app.data.repo.AuthRepository
 import com.lputouch.app.data.repo.StudentRepository
 import com.lputouch.app.ui.announcements.AnnouncementDetailScreen
 import com.lputouch.app.ui.announcements.AnnouncementsScreen
+import com.lputouch.app.ui.attendance.AttendanceDetailScreen
 import com.lputouch.app.ui.attendance.AttendanceScreen
+import com.lputouch.app.ui.bus.BusRoutesScreen
+import com.lputouch.app.ui.calendar.CalendarScreen
+import com.lputouch.app.ui.documents.DocumentsScreen
+import com.lputouch.app.ui.edurev.EduRevScreen
+import com.lputouch.app.ui.fee.FeeScreen
 import com.lputouch.app.ui.home.HomeScreen
+import com.lputouch.app.ui.hostel.HostelLeaveScreen
+import com.lputouch.app.ui.leaderboard.LeaderboardScreen
+import com.lputouch.app.ui.library.LibraryScreen
 import com.lputouch.app.ui.marks.MarksScreen
 import com.lputouch.app.ui.messages.MessagesScreen
 import com.lputouch.app.ui.more.AptitudeScoresScreen
@@ -39,8 +48,11 @@ import com.lputouch.app.ui.more.MentorRemarksScreen
 import com.lputouch.app.ui.more.RmsQueriesScreen
 import com.lputouch.app.ui.more.RplScreen
 import com.lputouch.app.ui.navigation.Routes
+import com.lputouch.app.ui.news.NewsScreen
+import com.lputouch.app.ui.phonedir.PhoneDirectoryScreen
 import com.lputouch.app.ui.placement.PlacementScreen
 import com.lputouch.app.ui.profile.ProfileScreen
+import com.lputouch.app.ui.seating.SeatingPlanScreen
 import com.lputouch.app.ui.settings.SettingsScreen
 import com.lputouch.app.ui.timetable.TimetableScreen
 import kotlinx.coroutines.launch
@@ -53,8 +65,8 @@ private data class BottomNavItem(
 
 private val bottomNavItems = listOf(
     BottomNavItem(Routes.HOME, "Home", Icons.Filled.Home),
-    BottomNavItem(Routes.TIMETABLE, "Timetable", Icons.Filled.CalendarMonth),
-    BottomNavItem(Routes.ANNOUNCEMENTS, "News", Icons.Filled.Campaign),
+    BottomNavItem(Routes.TIMETABLE, "Timetable", Icons.Filled.Assignment),
+    BottomNavItem(Routes.ANNOUNCEMENTS, "Alerts", Icons.Filled.Campaign),
     BottomNavItem(Routes.PROFILE, "Profile", Icons.Filled.Person)
 )
 
@@ -67,10 +79,10 @@ fun MainScreen(
 ) {
     val navController = rememberNavController()
     val scope = rememberCoroutineScope()
-    
+
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
-    
+
     val showBottomBar = bottomNavItems.any { it.route == currentDestination?.route }
 
     Scaffold(
@@ -138,10 +150,27 @@ fun MainScreen(
                 AnnouncementDetailScreen(id, tab, studentRepository, onBack = { navController.popBackStack() })
             }
             composable(Routes.PROFILE) { ProfileScreen(studentRepository, onBack = { navController.popBackStack() }) }
-            
-            // Sub-screens pushed onto the stack hiding the bottom bar
+
+            // Sub-screens (push to back stack, hides bottom bar)
             composable(Routes.MARKS) { MarksScreen(studentRepository, onBack = { navController.popBackStack() }) }
-            composable(Routes.ATTENDANCE) { AttendanceScreen(studentRepository, onBack = { navController.popBackStack() }) }
+            composable(Routes.ATTENDANCE) {
+                AttendanceScreen(
+                    studentRepository = studentRepository,
+                    onBack = { navController.popBackStack() },
+                    onViewDetail = { code -> navController.navigate("attendance_detail/$code") },
+                )
+            }
+            composable(
+                route = Routes.ATTENDANCE_DETAIL,
+                arguments = listOf(navArgument("courseCode") { type = NavType.StringType }),
+            ) { entry ->
+                val code = entry.arguments?.getString("courseCode") ?: ""
+                AttendanceDetailScreen(
+                    studentRepository = studentRepository,
+                    courseCode = code,
+                    onBack = { navController.popBackStack() },
+                )
+            }
             composable(Routes.SETTINGS) { SettingsScreen(sessionStore, onBack = { navController.popBackStack() }) }
             composable(Routes.MESSAGES) { MessagesScreen(studentRepository, onBack = { navController.popBackStack() }) }
             composable(Routes.PLACEMENT) { PlacementScreen(studentRepository, onBack = { navController.popBackStack() }) }
@@ -150,6 +179,19 @@ fun MainScreen(
             composable(Routes.SCORES) { AptitudeScoresScreen(studentRepository, onBack = { navController.popBackStack() }) }
             composable(Routes.RPL) { RplScreen(studentRepository, onBack = { navController.popBackStack() }) }
             composable(Routes.MAKEUP) { MakeupScreen(studentRepository, onBack = { navController.popBackStack() }) }
+
+            // ── New screens ───────────────────────────────────────────────────
+            composable(Routes.FEE) { FeeScreen(studentRepository, onBack = { navController.popBackStack() }) }
+            composable(Routes.DOCUMENTS) { DocumentsScreen(studentRepository, onBack = { navController.popBackStack() }) }
+            composable(Routes.SEATING_PLAN) { SeatingPlanScreen(studentRepository, onBack = { navController.popBackStack() }) }
+            composable(Routes.LIBRARY) { LibraryScreen(studentRepository, onBack = { navController.popBackStack() }) }
+            composable(Routes.BUS_ROUTES) { BusRoutesScreen(studentRepository, onBack = { navController.popBackStack() }) }
+            composable(Routes.EDU_REV) { EduRevScreen(studentRepository, onBack = { navController.popBackStack() }) }
+            composable(Routes.HOSTEL_LEAVE) { HostelLeaveScreen(studentRepository, onBack = { navController.popBackStack() }) }
+            composable(Routes.PHONE_DIRECTORY) { PhoneDirectoryScreen(studentRepository, onBack = { navController.popBackStack() }) }
+            composable(Routes.CALENDAR) { CalendarScreen(studentRepository, onBack = { navController.popBackStack() }) }
+            composable(Routes.LEADERBOARD) { LeaderboardScreen(studentRepository, onBack = { navController.popBackStack() }) }
+            composable(Routes.NEWS) { NewsScreen(studentRepository, onBack = { navController.popBackStack() }) }
         }
     }
 }

@@ -1,18 +1,35 @@
 package com.lputouch.app.data.repo
 
+import com.lputouch.app.data.api.HappeningsApi
 import com.lputouch.app.data.api.MobileApi
 import com.lputouch.app.data.api.UmsApi
+import com.lputouch.app.data.api.dto.AdmissionDocument
 import com.lputouch.app.data.api.dto.Announcement
 import com.lputouch.app.data.api.dto.AnnouncementDetail
 import com.lputouch.app.data.api.dto.AptitudeScore
+import com.lputouch.app.data.api.dto.AttendanceDetailItem
 import com.lputouch.app.data.api.dto.AttendanceItem
+import com.lputouch.app.data.api.dto.BusRoute
+import com.lputouch.app.data.api.dto.CalendarEvent
+import com.lputouch.app.data.api.dto.EduRevCategory
+import com.lputouch.app.data.api.dto.EduRevCourse
+import com.lputouch.app.data.api.dto.FeeBalanceItem
+import com.lputouch.app.data.api.dto.FeeExtensionItem
+import com.lputouch.app.data.api.dto.HostelLeaveBalance
+import com.lputouch.app.data.api.dto.HostelLeaveItem
+import com.lputouch.app.data.api.dto.LeaderboardEntry
+import com.lputouch.app.data.api.dto.LibraryItem
 import com.lputouch.app.data.api.dto.MakeupClass
+import com.lputouch.app.data.api.dto.MentorRemark
 import com.lputouch.app.data.api.dto.MessageItem
 import com.lputouch.app.data.api.dto.MessagesHistoryRequest
+import com.lputouch.app.data.api.dto.NewsPost
+import com.lputouch.app.data.api.dto.PhoneContact
 import com.lputouch.app.data.api.dto.PlacementDrive
 import com.lputouch.app.data.api.dto.ResultItem
 import com.lputouch.app.data.api.dto.RmsQuery
 import com.lputouch.app.data.api.dto.RplResult
+import com.lputouch.app.data.api.dto.SeatingPlanItem
 import com.lputouch.app.data.api.dto.StudentBasicInfo
 import com.lputouch.app.data.api.dto.TimetableItem
 import com.lputouch.app.data.db.AppDatabase
@@ -22,10 +39,14 @@ import com.lputouch.app.data.db.CachedResultEntity
 import com.lputouch.app.data.db.CachedTimetableEntity
 import com.lputouch.app.data.prefs.SessionStore
 import kotlinx.coroutines.flow.first
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class StudentRepository(
     private val mobileApi: MobileApi,
     private val umsApi: UmsApi,
+    private val happeningsApi: HappeningsApi,
     private val sessionStore: SessionStore,
     private val db: AppDatabase,
     private val authRepository: AuthRepository,
@@ -173,6 +194,12 @@ class StudentRepository(
         }
     }
 
+    suspend fun getAttendanceDetail(courseCode: String): List<AttendanceDetailItem> {
+        return withFreshSession { uid, token, deviceId ->
+            umsApi.getAttendanceDetail(uid, token, deviceId, courseCode).takeIf { it.isNotEmpty() }
+        } ?: emptyList()
+    }
+
     suspend fun getTimetable(forceRefresh: Boolean = false): List<TimetableItem> {
         if (forceRefresh || db.timetableDao().getAll().isEmpty()) {
             val items = withFreshSession { uid, token, deviceId ->
@@ -275,7 +302,7 @@ class StudentRepository(
         } ?: emptyList()
     }
 
-    suspend fun getMentorRemarks(): List<com.lputouch.app.data.api.dto.MentorRemark> {
+    suspend fun getMentorRemarks(): List<MentorRemark> {
         return try {
             mobileApi.getMentorRemarks().item1 ?: emptyList()
         } catch (e: Exception) {
@@ -286,6 +313,94 @@ class StudentRepository(
     suspend fun getAmcatScore(): List<AptitudeScore> = safeList { mobileApi.getAmcatScore() }
     suspend fun getCoCubesScore(): List<AptitudeScore> = safeList { mobileApi.getCoCubesScore() }
     suspend fun getRplResults(): List<RplResult> = safeList { mobileApi.getRplResult() }
+
+    // ─── New Features ──────────────────────────────────────────────────────────
+
+    suspend fun getAdmissionDocuments(): List<AdmissionDocument> {
+        return withFreshSession { uid, token, deviceId ->
+            umsApi.getAdmissionDocuments(token, deviceId, uid).takeIf { it.isNotEmpty() }
+        } ?: emptyList()
+    }
+
+    suspend fun getFeeBalance(): List<FeeBalanceItem> {
+        return withFreshSession { uid, token, deviceId ->
+            umsApi.getFeeBalance(uid, token, deviceId).takeIf { it.isNotEmpty() }
+        } ?: emptyList()
+    }
+
+    suspend fun getFeeExtensionPopup(): List<FeeExtensionItem> {
+        return safeList { mobileApi.getFeeDateExtensionPopup() }
+    }
+
+    suspend fun getSeatingPlan(): List<SeatingPlanItem> {
+        return withFreshSession { uid, token, deviceId ->
+            umsApi.getSeatingPlan(uid, token, deviceId).takeIf { it.isNotEmpty() }
+        } ?: emptyList()
+    }
+
+    suspend fun getLibraryData(): List<LibraryItem> {
+        return withFreshSession { uid, token, _ ->
+            umsApi.getLibraryData(uid, token).takeIf { it.isNotEmpty() }
+        } ?: emptyList()
+    }
+
+    suspend fun getBusRoutes(): List<BusRoute> {
+        return withFreshSession { uid, token, _ ->
+            umsApi.getBusRoutes(uid, token).takeIf { it.isNotEmpty() }
+        } ?: emptyList()
+    }
+
+    suspend fun getHostelLeaveHistory(): List<HostelLeaveItem> {
+        return withFreshSession { uid, token, _ ->
+            umsApi.getHostelLeaveDetails(uid, token).takeIf { it.isNotEmpty() }
+        } ?: emptyList()
+    }
+
+    suspend fun getHostelLeaveBalance(): HostelLeaveBalance? {
+        return withFreshSession { uid, token, _ ->
+            umsApi.getHostelLeaveBalance(uid, token)
+        }
+    }
+
+    suspend fun getPhoneDirectory(): List<PhoneContact> {
+        return withFreshSession { uid, token, deviceId ->
+            umsApi.getPhoneDirectory(uid, token, deviceId).takeIf { it.isNotEmpty() }
+        } ?: emptyList()
+    }
+
+    suspend fun getLeaderboard(monthYear: String? = null): List<LeaderboardEntry> {
+        val my = monthYear ?: run {
+            val sdf = SimpleDateFormat("MM/yyyy", Locale.US)
+            sdf.format(Date())
+        }
+        return withFreshSession { uid, token, _ ->
+            umsApi.getLeaderboard(my, uid, token).takeIf { it.isNotEmpty() }
+        } ?: emptyList()
+    }
+
+    suspend fun getCalendarEvents(): List<CalendarEvent> {
+        return withFreshSession { uid, token, _ ->
+            umsApi.getCalendar(uid, token).takeIf { it.isNotEmpty() }
+        } ?: emptyList()
+    }
+
+    suspend fun getEduRevCategories(): List<EduRevCategory> {
+        return try {
+            mobileApi.getEduRevCategories().item1 ?: emptyList()
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    suspend fun getEduRevCourses(categoryId: String): List<EduRevCourse> {
+        return safeList { mobileApi.getEduRevCourses(categoryId) }
+    }
+
+    suspend fun getNewsPosts(): List<NewsPost> {
+        return safeList { happeningsApi.getNewsPosts() }
+    }
+
+    // ───────────────────────────────────────────────────────────────────────────
 
     private suspend fun <T> safeList(block: suspend () -> List<T>): List<T> =
         try { block() } catch (e: Exception) { emptyList() }

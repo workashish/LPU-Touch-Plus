@@ -6,7 +6,9 @@ import com.lputouch.app.data.api.dto.CreateTokenRequest
 import com.lputouch.app.data.api.dto.CreateTokenResponse
 import com.lputouch.app.data.api.dto.EduRevCourse
 import com.lputouch.app.data.api.dto.EduRevResponse
+import com.lputouch.app.data.api.dto.FeeExtensionItem
 import com.lputouch.app.data.api.dto.MentorRemarksResponse
+import com.lputouch.app.data.api.dto.NewsPost
 import com.lputouch.app.data.api.dto.PinExistsResponse
 import com.lputouch.app.data.api.dto.RplResult
 import com.lputouch.app.data.api.dto.StudentResultResponse
@@ -37,6 +39,9 @@ interface MobileApi {
     @GET("api/Student/GetYourDost")
     suspend fun getYourDost(): Map<String, Any?>
 
+    @GET("api/Student/PlacementUnderTaking")
+    suspend fun getPlacementUndertaking(): Map<String, Any?>
+
     @GET("api/Parent/GetMentorMeetingRemarks")
     suspend fun getMentorRemarks(): MentorRemarksResponse
 
@@ -58,4 +63,21 @@ interface MobileApi {
 
     @GET("api/EduRev/Courses/{categoryId}")
     suspend fun getEduRevCourses(@Path("categoryId") categoryId: String): List<EduRevCourse>
+
+    /** Fee extension popup — returns list; first item has the display message. */
+    @GET("api/FeeExt/GetFeeDateExtensionPopup")
+    suspend fun getFeeDateExtensionPopup(): List<FeeExtensionItem>
+}
+
+/**
+ * WordPress REST API for Happenings/News feed at happenings.lpu.in.
+ * Uses a separate Retrofit instance (different base URL).
+ */
+interface HappeningsApi {
+    @GET("wp-json/wp/v2/posts")
+    suspend fun getNewsPosts(
+        @Query("per_page") perPage: Int = 20,
+        @Query("page") page: Int = 1,
+        @Query("_embed") embed: Boolean = true,
+    ): List<NewsPost>
 }

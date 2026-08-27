@@ -28,8 +28,9 @@ class LPUTouchApp : Application() {
         val db = AppDatabase.get(this)
         val mobileApi = ApiClient.mobileApi(sessionStore)
         val umsApi = ApiClient.umsApi(sessionStore)
+        val happeningsApi = ApiClient.happeningsApi()
         authRepository = AuthRepository(mobileApi, umsApi, sessionStore)
-        studentRepository = StudentRepository(mobileApi, umsApi, sessionStore, db, authRepository)
+        studentRepository = StudentRepository(mobileApi, umsApi, happeningsApi, sessionStore, db, authRepository)
 
         // Restore the in-memory JWT cache so authenticated calls work after process restart.
         runBlocking { sessionStore.jwtToken.first() }?.let { sessionStore.warmJwt(it) }

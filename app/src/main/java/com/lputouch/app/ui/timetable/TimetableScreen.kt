@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -110,14 +111,27 @@ fun TimetableScreen(
                     containerColor = MaterialTheme.colorScheme.background
                 ) {
                     dayNames.forEachIndexed { index, title ->
+                        val isToday = index == initialDay
                         Tab(
                             selected = selectedTabIndex == index,
                             onClick = { selectedTabIndex = index },
                             text = { 
-                                Text(
-                                    text = title, 
-                                    fontWeight = if (selectedTabIndex == index) FontWeight.Bold else FontWeight.Normal 
-                                ) 
+                                androidx.compose.foundation.layout.Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(
+                                        text = title, 
+                                        fontWeight = if (selectedTabIndex == index) FontWeight.Bold else FontWeight.Normal 
+                                    ) 
+                                    if (isToday) {
+                                        Spacer(Modifier.height(2.dp))
+                                        Box(
+                                            modifier = Modifier
+                                                .size(5.dp)
+                                                .background(MaterialTheme.colorScheme.primary, CircleShape)
+                                        )
+                                    }
+                                }
                             }
                         )
                     }

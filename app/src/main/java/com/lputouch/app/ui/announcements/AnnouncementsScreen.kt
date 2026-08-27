@@ -1,17 +1,10 @@
 package com.lputouch.app.ui.announcements
 
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -19,27 +12,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Campaign
-import androidx.compose.material3.Badge
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.lputouch.app.data.api.dto.Announcement
 import com.lputouch.app.data.repo.StudentRepository
@@ -57,6 +36,7 @@ fun AnnouncementsScreen(
 ) {
     var items by remember { mutableStateOf<List<Announcement>>(emptyList()) }
     var selectedCategory by remember { mutableStateOf<String?>(null) }
+    var searchQuery by remember { mutableStateOf("") }
     var loading by remember { mutableStateOf(true) }
     var refreshing by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -80,15 +60,29 @@ fun AnnouncementsScreen(
     val categories = remember(items) {
         listOf<String?>(null) + items.map { it.category }.filterNotNull().distinct().sorted()
     }
-    val visible = remember(items, selectedCategory) {
-        if (selectedCategory == null) items else items.filter { it.category == selectedCategory }
+
+    val visible = remember(items, selectedCategory, searchQuery) {
+        items
+            .filter { if (selectedCategory == null) true else it.category == selectedCategory }
+            .filter { a ->
+                if (searchQuery.isBlank()) true else {
+                    val q = searchQuery.lowercase()
+                    (a.subject?.lowercase()?.contains(q) == true) ||
+                    (a.description?.lowercase()?.contains(q) == true) ||
+                    (a.uploadedBy?.lowercase()?.contains(q) == true)
+                }
+            }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Announcements") },
+                title = { Text("Announcements", fontWeight = FontWeight.SemiBold) },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
+                ),
             )
         },
     ) { padding ->
@@ -115,11 +109,30 @@ fun AnnouncementsScreen(
                 modifier = Modifier.padding(padding),
             ) {
                 Column(Modifier.fillMaxSize()) {
+                    // Search bar
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                        placeholder = { Text("Search announcements...") },
+                        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                        trailingIcon = {
+                            if (searchQuery.isNotEmpty()) {
+                                IconButton(onClick = { searchQuery = "" }) {
+                                    Icon(Icons.Filled.Clear, contentDescription = "Clear")
+                                }
+                            }
+                        },
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                    )
+
+                    // Category filter chips
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .horizontalScroll(rememberScrollState())
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         categories.forEach { cat ->
@@ -130,13 +143,14 @@ fun AnnouncementsScreen(
                             )
                         }
                     }
+
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+                        contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         if (visible.isEmpty()) {
-                            item { EmptyState("No announcements in this category") }
+                            item { EmptyState(if (searchQuery.isNotBlank()) "No results for \"$searchQuery\"" else "No announcements in this category") }
                         }
                         items(visible, key = { it.announcementId ?: "${it.subject}-${it.entryDate}" }) { a ->
                             AnnouncementCard(a, onClick = { onOpen(a) })
@@ -150,11 +164,17 @@ fun AnnouncementsScreen(
 
 @Composable
 private fun AnnouncementCard(a: Announcement, onClick: () -> Unit) {
+    val isNew = a.isNew.equals("true", ignoreCase = true)
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isNew)
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+            else
+                MaterialTheme.colorScheme.surfaceVariant
+        ),
         shape = RoundedCornerShape(16.dp),
     ) {
         Column(Modifier.padding(16.dp)) {
@@ -173,18 +193,30 @@ private fun AnnouncementCard(a: Announcement, onClick: () -> Unit) {
                     )
                 }
                 Spacer(Modifier.weight(1f))
-                if (a.isNew == "True") {
-                    Badge { Text("NEW") }
+                if (isNew) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.primary,
+                        shape = RoundedCornerShape(6.dp),
+                    ) {
+                        Text(
+                            "NEW",
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
                 }
             }
             Spacer(Modifier.height(10.dp))
             Text(
                 text = a.subject ?: "",
                 style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
             )
             a.description?.takeIf { it.isNotBlank() }?.let {
                 Spacer(Modifier.height(6.dp))
-                Text(it, style = MaterialTheme.typography.bodySmall)
+                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 3)
             }
             Spacer(Modifier.height(10.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {

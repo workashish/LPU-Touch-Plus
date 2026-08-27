@@ -13,9 +13,9 @@ import com.lputouch.app.ui.main.MainScreen
 
 object Routes {
     const val LOGIN = "login"
-    const val MAIN = "main" // The new host for post-login screens
-    
-    // Kept these here so they are accessible from anywhere, even inside MainScreen
+    const val MAIN = "main" // The host for post-login screens
+
+    // Kept here so they are accessible from anywhere
     const val HOME = "home"
     const val MARKS = "marks"
     const val ATTENDANCE = "attendance"
@@ -31,6 +31,20 @@ object Routes {
     const val SCORES = "scores"
     const val RPL = "rpl"
     const val MAKEUP = "makeup"
+
+    // ── New routes ────────────────────────────────────────────────────────────
+    const val FEE = "fee"
+    const val DOCUMENTS = "documents"
+    const val SEATING_PLAN = "seating_plan"
+    const val LIBRARY = "library"
+    const val BUS_ROUTES = "bus_routes"
+    const val EDU_REV = "edu_rev"
+    const val HOSTEL_LEAVE = "hostel_leave"
+    const val PHONE_DIRECTORY = "phone_directory"
+    const val CALENDAR = "calendar"
+    const val LEADERBOARD = "leaderboard"
+    const val NEWS = "news"
+    const val ATTENDANCE_DETAIL = "attendance_detail/{courseCode}"
 }
 
 @Composable

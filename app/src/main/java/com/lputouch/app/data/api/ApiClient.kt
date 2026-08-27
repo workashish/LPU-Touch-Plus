@@ -13,6 +13,7 @@ object ApiClient {
 
     const val BASE_URL_MOBILE = "https://mobileapi.lpu.in/"
     const val BASE_URL_UMS = "https://ums.lpu.in/"
+    const val BASE_URL_HAPPENINGS = "https://happenings.lpu.in/"
 
     private val gson: Gson = GsonBuilder().create()
 
@@ -52,4 +53,17 @@ object ApiClient {
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
             .create(UmsApi::class.java)
+
+    fun happeningsApi(): HappeningsApi =
+        Retrofit.Builder()
+            .baseUrl(BASE_URL_HAPPENINGS)
+            .client(
+                OkHttpClient.Builder()
+                    .connectTimeout(20, TimeUnit.SECONDS)
+                    .readTimeout(20, TimeUnit.SECONDS)
+                    .build()
+            )
+            .addConverterFactory(GsonConverterFactory.create(gson))
+            .build()
+            .create(HappeningsApi::class.java)
 }

@@ -1,18 +1,32 @@
 package com.lputouch.app.data.api
 
+import com.lputouch.app.data.api.dto.AdmissionDocument
 import com.lputouch.app.data.api.dto.Announcement
+import com.lputouch.app.data.api.dto.AttendanceDetailItem
 import com.lputouch.app.data.api.dto.AttendanceItem
+import com.lputouch.app.data.api.dto.BusRoute
+import com.lputouch.app.data.api.dto.CalendarEvent
 import com.lputouch.app.data.api.dto.CheckPinRequest
 import com.lputouch.app.data.api.dto.CheckPinResponse
+import com.lputouch.app.data.api.dto.FeeBalanceItem
+import com.lputouch.app.data.api.dto.HostelLeaveBalance
+import com.lputouch.app.data.api.dto.HostelLeaveItem
+import com.lputouch.app.data.api.dto.JobProfileResponse
+import com.lputouch.app.data.api.dto.LeaderboardEntry
+import com.lputouch.app.data.api.dto.LibraryItem
 import com.lputouch.app.data.api.dto.MakeupClass
 import com.lputouch.app.data.api.dto.MenuListRequest
 import com.lputouch.app.data.api.dto.MenuListResponse
+import com.lputouch.app.data.api.dto.MenuItem
 import com.lputouch.app.data.api.dto.MessageItem
 import com.lputouch.app.data.api.dto.MessagesHistoryRequest
 import com.lputouch.app.data.api.dto.MessagesHistoryResponse
+import com.lputouch.app.data.api.dto.PhoneContact
 import com.lputouch.app.data.api.dto.PlacementDrive
+import com.lputouch.app.data.api.dto.PopupMessage
 import com.lputouch.app.data.api.dto.PvrResponse
 import com.lputouch.app.data.api.dto.RmsQuery
+import com.lputouch.app.data.api.dto.SeatingPlanItem
 import com.lputouch.app.data.api.dto.StudentBasicInfo
 import com.lputouch.app.data.api.dto.TimetableItem
 import com.lputouch.app.data.api.dto.UpdateRequest
@@ -20,6 +34,7 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 /**
  * Legacy WCF service hosted on ums.lpu.in/umswebservice/umswebservice.svc.
@@ -52,7 +67,7 @@ interface UmsApi {
         @Path("userId") userId: String,
         @Path("accessToken") accessToken: String,
         @Path("deviceId") deviceId: String,
-    ): List<com.lputouch.app.data.api.dto.MenuItem>
+    ): List<MenuItem>
 
     @GET("umswebservice/umswebservice.svc/GetAnnouncementsForServiceNew/{userId}/{accessToken}/{deviceId}/S")
     suspend fun getAnnouncements(
@@ -67,6 +82,14 @@ interface UmsApi {
         @Path("accessToken") accessToken: String,
         @Path("deviceId") deviceId: String,
     ): List<AttendanceItem>
+
+    @GET("umswebservice/umswebservice.svc/StudentAttendanceDetailForService/{userId}/{accessToken}/{deviceId}/{courseCode}")
+    suspend fun getAttendanceDetail(
+        @Path("userId") userId: String,
+        @Path("accessToken") accessToken: String,
+        @Path("deviceId") deviceId: String,
+        @Path("courseCode") courseCode: String,
+    ): List<AttendanceDetailItem>
 
     @GET("umswebservice/umswebservice.svc/StudentTimeTableForService/{userId}/{accessToken}/{deviceId}")
     suspend fun getTimetable(
@@ -104,7 +127,7 @@ interface UmsApi {
         @Path("userId") userId: String,
         @Path("accessToken") accessToken: String,
         @Path("deviceId") deviceId: String,
-    ): List<com.lputouch.app.data.api.dto.JobProfileResponse>
+    ): List<JobProfileResponse>
 
     @GET("umswebservice/umswebservice.svc/GetRMSViewResponseForService/{userId}/{accessToken}/{deviceId}")
     suspend fun getRmsQueries(
@@ -119,4 +142,78 @@ interface UmsApi {
         @Path("deviceId") deviceId: String,
         @Path("userId") userId: String,
     ): List<MakeupClass>
+
+    // ----------------------------- New Endpoints ----------------------------
+
+    @GET("umswebservice/umswebservice.svc/GetListAdmissionDocument/{accessToken}/{deviceId}/{userId}/{userId}")
+    suspend fun getAdmissionDocuments(
+        @Path("accessToken") accessToken: String,
+        @Path("deviceId") deviceId: String,
+        @Path("userId") userId: String,
+    ): List<AdmissionDocument>
+
+    @GET("umswebservice/umswebservice.svc/GetFeeBalance/{userId}/{accessToken}/{deviceId}")
+    suspend fun getFeeBalance(
+        @Path("userId") userId: String,
+        @Path("accessToken") accessToken: String,
+        @Path("deviceId") deviceId: String,
+    ): List<FeeBalanceItem>
+
+    @GET("umswebservice/umswebservice.svc/Student/SeatingPlan")
+    suspend fun getSeatingPlan(
+        @Query("uid") userId: String,
+        @Query("token") accessToken: String,
+        @Query("deviceId") deviceId: String,
+    ): List<SeatingPlanItem>
+
+    @GET("umswebservice/umswebservice.svc/Student/GetLibraryData")
+    suspend fun getLibraryData(
+        @Query("uid") userId: String,
+        @Query("token") accessToken: String,
+    ): List<LibraryItem>
+
+    @GET("umswebservice/umswebservice.svc/Student/GetBusRoutes")
+    suspend fun getBusRoutes(
+        @Query("uid") userId: String,
+        @Query("token") accessToken: String,
+    ): List<BusRoute>
+
+    @GET("umswebservice/umswebservice.svc/GetPopUpMessage/{userId}/{accessToken}/{deviceId}")
+    suspend fun getPopupMessages(
+        @Path("userId") userId: String,
+        @Path("accessToken") accessToken: String,
+        @Path("deviceId") deviceId: String,
+    ): List<PopupMessage>
+
+    @GET("umswebservice/umswebservice.svc/Parent/GetHostelLeaveDetails")
+    suspend fun getHostelLeaveDetails(
+        @Query("uid") userId: String,
+        @Query("token") accessToken: String,
+    ): List<HostelLeaveItem>
+
+    @GET("umswebservice/umswebservice.svc/Parent/HostelLeaveBalance")
+    suspend fun getHostelLeaveBalance(
+        @Query("uid") userId: String,
+        @Query("token") accessToken: String,
+    ): HostelLeaveBalance
+
+    @GET("umswebservice/umswebservice.svc/GetPhoneDirectory/{userId}/{accessToken}/{deviceId}")
+    suspend fun getPhoneDirectory(
+        @Path("userId") userId: String,
+        @Path("accessToken") accessToken: String,
+        @Path("deviceId") deviceId: String,
+    ): List<PhoneContact>
+
+    @GET("umswebservice/umswebservice.svc/Gamification/GetGamificationLeaderBoard")
+    suspend fun getLeaderboard(
+        @Query("MonthYear") monthYear: String,
+        @Query("uid") userId: String,
+        @Query("token") accessToken: String,
+    ): List<LeaderboardEntry>
+
+    @GET("umswebservice/umswebservice.svc/Student/GetCalendar")
+    suspend fun getCalendar(
+        @Query("uid") userId: String,
+        @Query("token") accessToken: String,
+    ): List<CalendarEvent>
 }
