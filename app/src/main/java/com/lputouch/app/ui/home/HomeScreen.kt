@@ -31,7 +31,24 @@ import com.lputouch.app.data.repo.StudentRepository
 import com.lputouch.app.ui.navigation.Routes
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Locale
 import java.util.Calendar
+
+private fun parseTimeToMinutes(timeStr: String?): Int {
+    if (timeStr.isNullOrBlank()) return 0
+    try {
+        val isPm = timeStr.contains("PM", ignoreCase = true)
+        val startStr = timeStr.split("-").firstOrNull()?.trim() ?: return 0
+        val parts = startStr.split(":")
+        var hour = parts.getOrNull(0)?.filter { it.isDigit() }?.toIntOrNull() ?: 0
+        val min = parts.getOrNull(1)?.filter { it.isDigit() }?.toIntOrNull() ?: 0
+        if (hour == 12) hour = 0
+        return (hour + if (isPm) 12 else 0) * 60 + min
+    } catch (e: Exception) {
+        return 0
+    }
+}
 
 private data class Tile(val route: String, val title: String, val icon: ImageVector, val color: Color)
 
@@ -94,7 +111,7 @@ fun HomeScreen(
                 val cal = Calendar.getInstance()
                 val dayOfWeek = cal.get(Calendar.DAY_OF_WEEK)
                 val appDay = if (dayOfWeek == Calendar.SUNDAY) 7 else dayOfWeek - 1
-                todayClasses = timetable.filter { it.day == appDay }.sortedBy { it.attendanceTime }
+                todayClasses = timetable.filter { it.day == appDay }.sortedBy { parseTimeToMinutes(it.attendanceTime) }
             } catch (e: Exception) {
                 // Ignore failure for dashboard widget
             } finally {
