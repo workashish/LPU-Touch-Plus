@@ -218,6 +218,13 @@ fun HomeScreen(
 
 @Composable
 private fun HeroHeader(profile: StudentBasicInfo?, name: String, onLogout: () -> Unit) {
+    val currentHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+    val greeting = when (currentHour) {
+        in 0..11 -> "Good Morning,"
+        in 12..16 -> "Good Afternoon,"
+        else -> "Good Evening,"
+    }
+    
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -238,7 +245,7 @@ private fun HeroHeader(profile: StudentBasicInfo?, name: String, onLogout: () ->
         ) {
             Column(Modifier.weight(1f)) {
                 Text(
-                    text = "Good Morning,",
+                    text = greeting,
                     style = MaterialTheme.typography.titleMedium,
                     color = Color.White.copy(alpha = 0.8f)
                 )
