@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder
 import com.lputouch.app.data.prefs.SessionStore
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import java.io.IOException
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
@@ -33,7 +34,19 @@ object ApiClient {
                 if (!jwt.isNullOrEmpty()) {
                     builder.header("Authorization", "Bearer $jwt")
                 }
-                chain.proceed(builder.build())
+                
+                val response = chain.proceed(builder.build())
+                val body = response.body
+                if (body != null) {
+                    val source = body.source()
+                    source.request(Long.MAX_VALUE)
+                    val buffer = source.buffer
+                    val responseString = buffer.clone().readString(Charsets.UTF_8)
+                    if (responseString.contains("Your session has expired", ignoreCase = true)) {
+                        throw IOException("SESSION_EXPIRED")
+                    }
+                }
+                response
             }
             .build()
     }
