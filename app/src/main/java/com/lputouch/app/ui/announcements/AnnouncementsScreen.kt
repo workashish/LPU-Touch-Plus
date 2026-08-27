@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import com.lputouch.app.util.rememberNetworkAvailability
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -41,9 +42,11 @@ fun AnnouncementsScreen(
     var refreshing by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+    val isOnline = rememberNetworkAvailability()
 
     suspend fun load(force: Boolean = false) {
         error = null
+        if (!isOnline) { error = "No internet connection"; return }
         try {
             items = studentRepository.getAnnouncements(forceRefresh = force)
         } catch (e: Exception) {

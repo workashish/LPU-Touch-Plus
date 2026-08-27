@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,6 +27,7 @@ import com.lputouch.app.data.api.dto.TimetableItem
 import com.lputouch.app.data.prefs.SessionStore
 import com.lputouch.app.data.repo.StudentRepository
 import com.lputouch.app.ui.navigation.Routes
+import com.lputouch.app.util.rememberNetworkAvailability
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -58,7 +60,7 @@ private data class Tile(val route: String, val title: String, val icon: ImageVec
 
 private val quickLinks = listOf(
     Tile(Routes.MARKS, "Marks", Icons.Filled.School, Color(0xFF1565C0)),
-    Tile(Routes.ATTENDANCE, "Attendance", Icons.Filled.Assignment, Color(0xFF2E7D32)),
+    Tile(Routes.ATTENDANCE, "Attendance", Icons.AutoMirrored.Filled.Assignment, Color(0xFF2E7D32)),
     Tile(Routes.MESSAGES, "Messages", Icons.Filled.Email, Color(0xFF00838F)),
     Tile(Routes.PLACEMENT, "Placement", Icons.Filled.Work, Color(0xFFF57C00)),
     Tile(Routes.MENTOR_REMARKS, "Mentor", Icons.Filled.Groups, Color(0xFF5E35B1)),
@@ -69,7 +71,7 @@ private val quickLinks = listOf(
     Tile(Routes.FEE, "Fee", Icons.Filled.AccountBalance, Color(0xFF6A1B9A)),
     Tile(Routes.DOCUMENTS, "Documents", Icons.Filled.Folder, Color(0xFF0277BD)),
     Tile(Routes.SEATING_PLAN, "Seating", Icons.Filled.EventSeat, Color(0xFF558B2F)),
-    Tile(Routes.LIBRARY, "Library", Icons.Filled.MenuBook, Color(0xFF4E342E)),
+    Tile(Routes.LIBRARY, "Library", Icons.AutoMirrored.Filled.MenuBook, Color(0xFF4E342E)),
     Tile(Routes.BUS_ROUTES, "Bus", Icons.Filled.DirectionsBus, Color(0xFF00695C)),
     Tile(Routes.EDU_REV, "EduRev", Icons.Filled.PlayLesson, Color(0xFF1565C0)),
     Tile(Routes.HOSTEL_LEAVE, "Hostel", Icons.Filled.Hotel, Color(0xFF37474F)),
@@ -92,10 +94,16 @@ fun HomeScreen(
     var studentName by remember { mutableStateOf("Student") }
     var todayClasses by remember { mutableStateOf<List<TimetableItem>>(emptyList()) }
     var isLoadingClasses by remember { mutableStateOf(true) }
+    val isOnline = rememberNetworkAvailability()
 
     LaunchedEffect(Unit) {
         val saved = sessionStore.studentName.first()
         if (!saved.isNullOrBlank()) studentName = saved
+
+        if (!isOnline) {
+            isLoadingClasses = false
+            return@LaunchedEffect
+        }
 
         launch {
             try {
@@ -317,7 +325,7 @@ private fun HeroHeader(profile: StudentBasicInfo?, name: String, onLogout: () ->
                     modifier = Modifier
                         .background(Color.White.copy(alpha = 0.2f), CircleShape)
                 ) {
-                    Icon(Icons.Filled.Logout, contentDescription = "Logout", tint = Color.White)
+                    Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Logout", tint = Color.White)
                 }
             }
         }
@@ -392,7 +400,7 @@ private fun StatsRow(profile: StudentBasicInfo?, onOpen: (String) -> Unit) {
             }
         } else {
             profile!!.aggAttendance?.takeIf { it.isNotBlank() }?.let {
-                item { StatChipItem("Attendance", it, Icons.Filled.Assignment, Color(0xFF2E7D32)) { onOpen(Routes.ATTENDANCE) } }
+                item { StatChipItem("Attendance", it, Icons.AutoMirrored.Filled.Assignment, Color(0xFF2E7D32)) { onOpen(Routes.ATTENDANCE) } }
             }
             profile.announcementCount?.takeIf { it.isNotBlank() && it != "0" }?.let {
                 item { StatChipItem("New Alerts", it, Icons.Filled.Campaign, Color(0xFFE65100)) { onOpen(Routes.ANNOUNCEMENTS) } }

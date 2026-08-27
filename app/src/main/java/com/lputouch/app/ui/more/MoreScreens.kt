@@ -18,6 +18,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import com.lputouch.app.util.rememberNetworkAvailability
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,9 +49,11 @@ fun MentorRemarksScreen(
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+    val isOnline = rememberNetworkAvailability()
 
     suspend fun load() {
         error = null
+        if (!isOnline) { error = "No internet connection"; return }
         try { items = studentRepository.getMentorRemarks() } catch (e: Exception) { error = e.message ?: "Failed to load" }
     }
 
@@ -108,9 +111,11 @@ fun RmsQueriesScreen(
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+    val isOnline = rememberNetworkAvailability()
 
     suspend fun load() {
         error = null
+        if (!isOnline) { error = "No internet connection"; return }
         try { items = studentRepository.getRmsQueries() } catch (e: Exception) { error = e.message ?: "Failed to load" }
     }
 
@@ -174,9 +179,11 @@ fun AptitudeScoresScreen(
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+    val isOnline = rememberNetworkAvailability()
 
     suspend fun load() {
         error = null
+        if (!isOnline) { error = "No internet connection"; return }
         try {
             amcat = studentRepository.getAmcatScore()
             cocubes = studentRepository.getCoCubesScore()
@@ -248,9 +255,11 @@ fun RplScreen(
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+    val isOnline = rememberNetworkAvailability()
 
     suspend fun load() {
         error = null
+        if (!isOnline) { error = "No internet connection"; return }
         try { items = studentRepository.getRplResults() } catch (e: Exception) { error = e.message ?: "Failed to load" }
     }
 
@@ -300,9 +309,11 @@ fun MakeupScreen(
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+    val isOnline = rememberNetworkAvailability()
 
     suspend fun load() {
         error = null
+        if (!isOnline) { error = "No internet connection"; return }
         try { items = studentRepository.getMakeupClasses() } catch (e: Exception) { error = e.message ?: "Failed to load" }
     }
 

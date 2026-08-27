@@ -40,6 +40,7 @@ import com.lputouch.app.data.repo.StudentRepository
 import com.lputouch.app.ui.components.EmptyState
 import com.lputouch.app.ui.components.ErrorState
 import com.lputouch.app.ui.components.LoadingState
+import com.lputouch.app.util.rememberNetworkAvailability
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 
@@ -53,11 +54,12 @@ fun MessagesScreen(
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+    val isOnline = rememberNetworkAvailability()
 
     suspend fun load() {
         error = null
+        if (!isOnline) { error = "No internet connection"; return }
         try {
-            // Bound the fetch so a dead network can't leave the UI on an infinite spinner.
             messages = withTimeout(25_000) { studentRepository.getMyMessages() }
         } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
             error = "Timed out. Check your connection and try again."

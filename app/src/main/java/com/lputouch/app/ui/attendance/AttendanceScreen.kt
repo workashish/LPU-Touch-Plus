@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.lputouch.app.util.rememberNetworkAvailability
 import com.lputouch.app.data.api.dto.AttendanceItem
 import com.lputouch.app.data.repo.StudentRepository
 import com.lputouch.app.ui.components.EmptyState
@@ -38,9 +39,11 @@ fun AttendanceScreen(
     var refreshing by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+    val isOnline = rememberNetworkAvailability()
 
     suspend fun load(force: Boolean = false) {
         error = null
+        if (!isOnline) { error = "No internet connection"; return }
         try {
             items = studentRepository.getAttendance(forceRefresh = force)
         } catch (e: Exception) {

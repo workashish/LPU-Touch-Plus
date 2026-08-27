@@ -28,6 +28,7 @@ import com.lputouch.app.data.api.dto.ProfileSection
 import com.lputouch.app.data.repo.StudentRepository
 import com.lputouch.app.ui.components.ErrorState
 import com.lputouch.app.ui.components.LoadingState
+import com.lputouch.app.util.rememberNetworkAvailability
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -44,11 +45,12 @@ fun ProfileScreen(
     var refreshing by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+    val isOnline = rememberNetworkAvailability()
 
     suspend fun load() {
         error = null
+        if (!isOnline) { error = "No internet connection"; return }
         try {
-            // Fetch sequentially to prevent SessionStore race conditions during token reads
             basicInfo = studentRepository.getStudentBasicInfo()
             profileSections = studentRepository.getProfile()
         } catch (e: Exception) {

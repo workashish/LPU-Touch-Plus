@@ -53,6 +53,7 @@ import com.lputouch.app.data.repo.StudentRepository
 import com.lputouch.app.ui.components.EmptyState
 import com.lputouch.app.ui.components.ErrorState
 import com.lputouch.app.ui.components.LoadingState
+import com.lputouch.app.util.rememberNetworkAvailability
 import kotlinx.coroutines.launch
 import java.util.Calendar
 
@@ -68,7 +69,8 @@ fun TimetableScreen(
     var loading by remember { mutableStateOf(true) }
     var refreshing by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
-    
+    val isOnline = rememberNetworkAvailability()
+
     // Default selected tab to today.
     // Calendar: 1=Sunday, 2=Monday, ..., 7=Saturday
     // We want:   0=Monday, 1=Tuesday, ..., 6=Sunday
@@ -91,6 +93,7 @@ fun TimetableScreen(
 
     suspend fun load(force: Boolean = false) {
         error = null
+        if (!isOnline) { error = "No internet connection"; return }
         try {
             items = studentRepository.getTimetable(forceRefresh = force)
         } catch (e: Exception) {

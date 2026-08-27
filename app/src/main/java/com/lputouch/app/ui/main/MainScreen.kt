@@ -8,7 +8,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Assignment
+import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material.icons.filled.Campaign
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
@@ -73,7 +73,7 @@ private data class BottomNavItem(
 
 private val bottomNavItems = listOf(
     BottomNavItem(Routes.HOME, "Home", Icons.Filled.Home),
-    BottomNavItem(Routes.TIMETABLE, "Timetable", Icons.Filled.Assignment),
+    BottomNavItem(Routes.TIMETABLE, "Timetable", Icons.AutoMirrored.Filled.Assignment),
     BottomNavItem(Routes.ANNOUNCEMENTS, "Alerts", Icons.Filled.Campaign),
     BottomNavItem(Routes.PROFILE, "Profile", Icons.Filled.Person)
 )

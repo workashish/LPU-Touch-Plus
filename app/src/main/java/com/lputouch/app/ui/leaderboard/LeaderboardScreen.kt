@@ -22,6 +22,7 @@ import com.lputouch.app.data.repo.StudentRepository
 import com.lputouch.app.ui.components.EmptyState
 import com.lputouch.app.ui.components.ErrorState
 import com.lputouch.app.ui.components.LoadingState
+import com.lputouch.app.util.rememberNetworkAvailability
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -32,9 +33,11 @@ fun LeaderboardScreen(studentRepository: StudentRepository, onBack: () -> Unit) 
     var refreshing by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+    val isOnline = rememberNetworkAvailability()
 
     suspend fun load(force: Boolean = false) {
         error = null
+        if (!isOnline) { error = "No internet connection"; return }
         try {
             items = studentRepository.getLeaderboard()
         } catch (e: Exception) {

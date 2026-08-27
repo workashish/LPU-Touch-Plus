@@ -20,6 +20,7 @@ import com.lputouch.app.data.api.dto.FeeExtensionItem
 import com.lputouch.app.data.repo.StudentRepository
 import com.lputouch.app.ui.components.EmptyState
 import com.lputouch.app.ui.components.LoadingState
+import com.lputouch.app.util.rememberNetworkAvailability
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -30,14 +31,19 @@ fun FeeScreen(studentRepository: StudentRepository, onBack: () -> Unit) {
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+    val isOnline = rememberNetworkAvailability()
 
     LaunchedEffect(Unit) {
         loading = true
-        try {
-            feeBalance = studentRepository.getFeeBalance()
-            feeExtension = studentRepository.getFeeExtensionPopup()
-        } catch (e: Exception) {
-            error = e.message ?: "Failed to load fee data"
+        if (!isOnline) {
+            error = "No internet connection"
+        } else {
+            try {
+                feeBalance = studentRepository.getFeeBalance()
+                feeExtension = studentRepository.getFeeExtensionPopup()
+            } catch (e: Exception) {
+                error = e.message ?: "Failed to load fee data"
+            }
         }
         loading = false
     }

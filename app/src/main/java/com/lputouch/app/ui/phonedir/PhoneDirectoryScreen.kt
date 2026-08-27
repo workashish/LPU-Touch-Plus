@@ -24,6 +24,7 @@ import com.lputouch.app.data.repo.StudentRepository
 import com.lputouch.app.ui.components.EmptyState
 import com.lputouch.app.ui.components.ErrorState
 import com.lputouch.app.ui.components.LoadingState
+import com.lputouch.app.util.rememberNetworkAvailability
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,9 +37,11 @@ fun PhoneDirectoryScreen(studentRepository: StudentRepository, onBack: () -> Uni
     var searchQuery by remember { mutableStateOf("") }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val isOnline = rememberNetworkAvailability()
 
     suspend fun load(force: Boolean = false) {
         error = null
+        if (!isOnline) { error = "No internet connection"; return }
         try {
             items = studentRepository.getPhoneDirectory()
         } catch (e: Exception) {

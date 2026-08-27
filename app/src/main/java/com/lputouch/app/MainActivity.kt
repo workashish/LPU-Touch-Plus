@@ -18,6 +18,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.lputouch.app.notif.AnnouncementWorker
 import com.lputouch.app.security.AppLockGate
+import com.lputouch.app.util.NotificationPermissionHelper
 import com.lputouch.app.ui.navigation.AppNavHost
 import com.lputouch.app.ui.theme.LPUTouchPlusTheme
 import java.util.concurrent.TimeUnit
@@ -29,6 +30,7 @@ class MainActivity : FragmentActivity() {
         enableEdgeToEdge()
         val app = application as LPUTouchApp
         scheduleAnnouncementWorker()
+        NotificationPermissionHelper.requestNotificationPermission(this)
         com.lputouch.app.widget.TimetableWidgetReceiver.update(this)
         setContent {
             // Nullable initial: DataStore loads async — avoid flashing the login screen on restart.

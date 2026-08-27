@@ -4,8 +4,11 @@ import android.app.Application
 import android.os.Handler
 import android.os.Looper
 import android.widget.Toast
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
 import com.lputouch.app.data.api.ApiClient
 import com.lputouch.app.data.db.AppDatabase
 import com.lputouch.app.data.prefs.SecureStore
@@ -35,7 +38,9 @@ class LPUTouchApp : Application(), ImageLoaderFactory {
         studentRepository = StudentRepository(this, mobileApi, umsApi, happeningsApi, sessionStore, db, authRepository)
 
         // Restore the in-memory JWT cache so authenticated calls work after process restart.
-        runBlocking { sessionStore.jwtToken.first() }?.let { sessionStore.warmJwt(it) }
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+            sessionStore.jwtToken.first()?.let { sessionStore.warmJwt(it) }
+        }
 
         installCrashHandler()
     }
