@@ -123,8 +123,8 @@ private fun AttendanceSummaryBanner(items: List<AttendanceItem>) {
             modifier = Modifier.padding(16.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            SummaryChip("✅ Above 75%", above.toString(), MaterialTheme.colorScheme.primary)
-            SummaryChip("⚠️ Below 75%", below.toString(), MaterialTheme.colorScheme.error)
+            SummaryChip("Above 75%", above.toString(), MaterialTheme.colorScheme.primary)
+            SummaryChip("Below 75%", below.toString(), MaterialTheme.colorScheme.error)
         }
     }
 }

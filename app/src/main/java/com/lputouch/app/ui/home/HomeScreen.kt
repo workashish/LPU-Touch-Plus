@@ -167,7 +167,7 @@ fun HomeScreen(
                             shape = RoundedCornerShape(16.dp)
                         ) {
                             Text(
-                                "No classes scheduled for today! 🎉",
+                                "No classes scheduled for today!",
                                 modifier = Modifier.padding(20.dp),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -244,7 +244,7 @@ private fun HeroHeader(profile: StudentBasicInfo?, name: String, onLogout: () ->
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = "$name 👋",
+                    text = name,
                     style = MaterialTheme.typography.displaySmall,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
@@ -327,7 +327,7 @@ private fun BirthdayBanner(name: String) {
         shape = RoundedCornerShape(16.dp),
     ) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("🎂", style = MaterialTheme.typography.titleLarge)
+            Icon(imageVector = androidx.compose.material.icons.Icons.Filled.Cake, contentDescription = "Birthday", tint = Color(0xFFC2185B))
             Spacer(Modifier.width(12.dp))
             Column {
                 Text("Happy Birthday!", fontWeight = FontWeight.Bold, color = Color(0xFFC2185B))
