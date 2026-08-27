@@ -217,6 +217,7 @@ fun TimetableScreen(
 private fun TimetableCard(t: TimetableItem) {
     val desc = t.description?.replace("\r", "")?.replace("\n", "")?.trim() ?: ""
     val isAvailableShortly = desc.contains("available Shortly", ignoreCase = true)
+    val isMakeup = desc.contains("[MAKEUP]", ignoreCase = true)
     
     // Improved Regex to handle arbitrary spacing and newlines, adding missing colons!
     val courseCodeMatch = Regex("C:\\s*([^ /]+)").find(desc)?.groupValues?.get(1) ?: Regex("C:\\s*:?\\s*([^ /]+)").find(desc)?.groupValues?.get(1) ?: Regex("C:([^ /]+)").find(desc)?.groupValues?.get(1)
@@ -237,7 +238,9 @@ private fun TimetableCard(t: TimetableItem) {
         ?: courseCodeMatchFinal?.takeIf { it.isNotBlank() } 
         ?: if (isAvailableShortly) "Notice" else type
         
-    val displaySubtitle = if (isAvailableShortly) desc else (type + (sectionMatch?.let { " • Sec $it" } ?: ""))
+    val displaySubtitle = if (isAvailableShortly) desc
+        else if (isMakeup) desc.removePrefix("[MAKEUP]").trim()
+        else (type + (sectionMatch?.let { " • Sec $it" } ?: ""))
     val displayRoom = t.roomNo?.takeIf { it.isNotBlank() } ?: roomMatch
     val displayFaculty = t.facultyName?.takeIf { it.isNotBlank() }
 

@@ -179,7 +179,7 @@ class TimetableWidget : GlanceAppWidget() {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "📅  $dayName",
+                    text = dayName,
                     style = TextStyle(
                         color = GlanceTheme.colors.onBackground,
                         fontSize = 16.sp,
@@ -239,7 +239,7 @@ class TimetableWidget : GlanceAppWidget() {
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = "● NOW",
+                        text = "NOW",
                         style = TextStyle(
                             color = GlanceTheme.colors.primary,
                             fontSize = 11.sp,
@@ -267,8 +267,8 @@ class TimetableWidget : GlanceAppWidget() {
                 }
                 Spacer(modifier = GlanceModifier.height(4.dp))
                 val details = listOfNotNull(
-                    room?.let { "📍 $it" },
-                    faculty?.let { "👤 $it" },
+                    room?.let { "Rm $it" },
+                    faculty?.let { it },
                 ).joinToString("  •  ")
                 if (details.isNotBlank()) {
                     Text(
@@ -356,7 +356,7 @@ class TimetableWidget : GlanceAppWidget() {
                             ),
                         )
                         status == ClassStatus.PAST -> Text(
-                            text = "✓",
+                            text = "Done",
                             style = TextStyle(
                                 color = GlanceTheme.colors.onSurfaceVariant,
                                 fontSize = 12.sp,
@@ -392,8 +392,8 @@ class TimetableWidget : GlanceAppWidget() {
                     )
                     // Room + Faculty on same line
                     val meta = listOfNotNull(
-                        displayRoom?.let { "📍 $it" },
-                        t.facultyName.takeIf { it.isNotBlank() }?.let { "👤 $it" },
+                        displayRoom?.let { "Rm $it" },
+                        t.facultyName.takeIf { it.isNotBlank() }?.let { it },
                     ).joinToString("  •  ")
                     if (meta.isNotBlank()) {
                         Spacer(modifier = GlanceModifier.height(2.dp))
@@ -424,8 +424,12 @@ class TimetableWidget : GlanceAppWidget() {
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = "🎉",
-                    style = TextStyle(fontSize = 28.sp),
+                    text = "Free Day",
+                    style = TextStyle(
+                        color = GlanceTheme.colors.primary,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                    ),
                 )
                 Spacer(modifier = GlanceModifier.height(6.dp))
                 Text(

@@ -298,7 +298,7 @@ class StudentRepository(
         
         val attendanceMap = db.attendanceDao().getAll().associate { it.courseCode.trim().uppercase() to it.faculty }
         
-        return db.timetableDao().getAll().map {
+        val regularItems = db.timetableDao().getAll().map {
             val cCode = (it.courseCode.takeIf { c -> c.isNotBlank() } 
                 ?: Regex("(?:C:|Course:)\\s*([^ /]+)").find(it.description)?.groupValues?.get(1) 
                 ?: "").trim().uppercase()
@@ -316,6 +316,67 @@ class StudentRepository(
                 roomNo = it.roomNo,
                 description = it.description,
             )
+        }
+
+        // Fetch makeup/adjustment classes and inject into timetable
+        val makeupItems = try {
+            getMakeupClasses().mapNotNull { makeup ->
+                val dayOfWeek = parseMakeupDayOfWeek(makeup.makeupDate) ?: return@mapNotNull null
+                val time = makeup.lectureTime ?: makeup.attendanceTime ?: return@mapNotNull null
+                val courseCode = makeup.courseCode?.substringBefore(":")?.trim()
+                    ?: return@mapNotNull null
+                val courseName = makeup.courseCode?.substringAfter(":")?.trim() ?: ""
+                val faculty = makeup.makeupBy?.substringBefore(":")?.trim()
+                    ?: makeup.facultyName ?: ""
+                val category = makeup.category?.takeIf { it.isNotBlank() } ?: makeup.type ?: ""
+                val section = makeup.sectionNo?.takeIf { it.isNotBlank() } ?: ""
+
+                TimetableItem(
+                    day = dayOfWeek,
+                    attendanceTime = time,
+                    courseName = courseName,
+                    courseCode = courseCode,
+                    facultyName = faculty,
+                    roomNo = makeup.roomNo ?: "",
+                    description = "[MAKEUP] $category${if (section.isNotBlank()) " - Sec $section" else ""} (by $faculty)",
+                )
+            }
+        } catch (_: Exception) { emptyList() }
+
+        return regularItems + makeupItems
+    }
+
+    /**
+     * Parses a makeup date string (MM/dd/yy or MM/dd/yyyy) and returns
+     * the app day-of-week (1=Mon...7=Sun) if it falls within the current week.
+     * Returns null if the date can't be parsed or is in the past.
+     */
+    private fun parseMakeupDayOfWeek(dateStr: String?): Int? {
+        if (dateStr.isNullOrBlank()) return null
+        return try {
+            val parts = dateStr.split("/")
+            if (parts.size < 3) return null
+            val month = parts[0].toIntOrNull() ?: return null
+            val day = parts[1].toIntOrNull() ?: return null
+            val year = parts[2].toIntOrNull()?.let {
+                if (it < 100) 2000 + it else it
+            } ?: return null
+
+            val cal = java.util.Calendar.getInstance()
+            val makeupCal = java.util.Calendar.getInstance().apply {
+                set(year, month - 1, day, 0, 0, 0)
+                set(java.util.Calendar.MILLISECOND, 0)
+            }
+
+            // Only show if the makeup date is within ±7 days of today
+            val diffMs = makeupCal.timeInMillis - cal.timeInMillis
+            if (kotlin.math.abs(diffMs) > 7L * 24 * 60 * 60 * 1000) return null
+
+            // Convert Java Calendar day (1=Sun) to app day (1=Mon...7=Sun)
+            val javaDay = makeupCal.get(java.util.Calendar.DAY_OF_WEEK)
+            if (javaDay == java.util.Calendar.SUNDAY) 7 else javaDay - 1
+        } catch (_: Exception) {
+            null
         }
     }
 

@@ -145,7 +145,7 @@ fun HomeScreen(
                 HeroHeader(profile = profile, name = studentName, onLogout = onLogout)
             }
 
-            // Fee alert banner
+            // Fee alert banner — hidden (not absent) until profile loads to prevent shift
             val p = profile
             if (p != null && isFeeActive(p.isFee) && !p.feeText.isNullOrBlank()) {
                 item {
@@ -154,20 +154,18 @@ fun HomeScreen(
                 }
             }
 
-            // Birthday banner
-            if (p?.isBirthdayToday == true) {
+            // Birthday banner — hidden (not absent) until profile loads to prevent shift
+            if (p != null && p.isBirthdayToday == true) {
                 item {
                     Spacer(Modifier.height(12.dp))
                     BirthdayBanner(p.studentName ?: "")
                 }
             }
 
-            // Stats row
-            if (p != null) {
-                item {
-                    Spacer(Modifier.height(16.dp))
-                    StatsRow(profile = p, onOpen = onOpen)
-                }
+            // Stats row — always rendered to prevent content shift
+            item {
+                Spacer(Modifier.height(16.dp))
+                StatsRow(profile = p, onOpen = onOpen)
             }
 
             // Today's classes
@@ -381,25 +379,68 @@ private fun BirthdayBanner(name: String) {
 }
 
 @Composable
-private fun StatsRow(profile: StudentBasicInfo, onOpen: (String) -> Unit) {
+private fun StatsRow(profile: StudentBasicInfo?, onOpen: (String) -> Unit) {
+    val isLoaded = profile != null && profile.error.isNullOrBlank()
     LazyRow(
         contentPadding = PaddingValues(horizontal = 20.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        profile.aggAttendance?.takeIf { it.isNotBlank() }?.let {
-            item { StatChipItem("Attendance", it, Icons.Filled.Assignment, Color(0xFF2E7D32)) { onOpen(Routes.ATTENDANCE) } }
+        if (!isLoaded) {
+            // Placeholder chips while profile loads — prevents content shift
+            repeat(3) {
+                item { StatChipPlaceholder() }
+            }
+        } else {
+            profile!!.aggAttendance?.takeIf { it.isNotBlank() }?.let {
+                item { StatChipItem("Attendance", it, Icons.Filled.Assignment, Color(0xFF2E7D32)) { onOpen(Routes.ATTENDANCE) } }
+            }
+            profile.announcementCount?.takeIf { it.isNotBlank() && it != "0" }?.let {
+                item { StatChipItem("New Alerts", it, Icons.Filled.Campaign, Color(0xFFE65100)) { onOpen(Routes.ANNOUNCEMENTS) } }
+            }
+            profile.myMessagesCount?.takeIf { it.isNotBlank() && it != "0" }?.let {
+                item { StatChipItem("Messages", it, Icons.Filled.Email, Color(0xFF00838F)) { onOpen(Routes.MESSAGES) } }
+            }
+            profile.seatingPlanExamCount?.takeIf { it.isNotBlank() && it != "0" }?.let {
+                item { StatChipItem("Exams", it, Icons.Filled.EventSeat, Color(0xFF6A1B9A)) { onOpen(Routes.SEATING_PLAN) } }
+            }
+            profile.currentBalance?.takeIf { it.isNotBlank() && it.lowercase() != "nil" }?.let {
+                item { StatChipItem("Balance", it, Icons.Filled.AccountBalance, Color(0xFFC62828)) { onOpen(Routes.FEE) } }
+            }
         }
-        profile.announcementCount?.takeIf { it.isNotBlank() && it != "0" }?.let {
-            item { StatChipItem("New Alerts", it, Icons.Filled.Campaign, Color(0xFFE65100)) { onOpen(Routes.ANNOUNCEMENTS) } }
-        }
-        profile.myMessagesCount?.takeIf { it.isNotBlank() && it != "0" }?.let {
-            item { StatChipItem("Messages", it, Icons.Filled.Email, Color(0xFF00838F)) { onOpen(Routes.MESSAGES) } }
-        }
-        profile.seatingPlanExamCount?.takeIf { it.isNotBlank() && it != "0" }?.let {
-            item { StatChipItem("Exams", it, Icons.Filled.EventSeat, Color(0xFF6A1B9A)) { onOpen(Routes.SEATING_PLAN) } }
-        }
-        profile.currentBalance?.takeIf { it.isNotBlank() && it.lowercase() != "nil" }?.let {
-            item { StatChipItem("Balance", it, Icons.Filled.AccountBalance, Color(0xFFC62828)) { onOpen(Routes.FEE) } }
+    }
+}
+
+@Composable
+private fun StatChipPlaceholder() {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        shape = RoundedCornerShape(12.dp),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(14.dp)
+                    .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(4.dp))
+            )
+            Column {
+                Box(
+                    modifier = Modifier
+                        .width(36.dp)
+                        .height(14.dp)
+                        .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(4.dp))
+                )
+                Spacer(Modifier.height(2.dp))
+                Box(
+                    modifier = Modifier
+                        .width(52.dp)
+                        .height(10.dp)
+                        .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(4.dp))
+                )
+            }
         }
     }
 }
