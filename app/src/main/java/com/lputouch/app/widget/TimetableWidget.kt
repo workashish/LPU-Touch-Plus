@@ -39,7 +39,7 @@ class TimetableWidget : GlanceAppWidget() {
         val db = AppDatabase.get(context)
         val allItems = db.timetableDao().getAll()
         val allAttendance = db.attendanceDao().getAll()
-        val attendanceMap = allAttendance.associate { it.courseCode to it.faculty }
+        val attendanceMap = allAttendance.associate { it.courseCode.trim().uppercase() to it.faculty }
         
         val cal = Calendar.getInstance()
         val dayOfWeek = cal.get(Calendar.DAY_OF_WEEK)
@@ -49,9 +49,9 @@ class TimetableWidget : GlanceAppWidget() {
         val todayClasses = allItems
             .filter { it.day == appDay }
             .map {
-                val cCode = it.courseCode.takeIf { c -> c.isNotBlank() } 
+                val cCode = (it.courseCode.takeIf { c -> c.isNotBlank() } 
                     ?: Regex("(?:C:|Course:)\\s*([^ /]+)").find(it.description)?.groupValues?.get(1) 
-                    ?: ""
+                    ?: "").trim().uppercase()
                 val stitchedFaculty = it.facultyName.takeIf { f -> f.isNotBlank() } 
                     ?: attendanceMap[cCode]?.takeIf { f -> f.isNotBlank() } 
                     ?: ""

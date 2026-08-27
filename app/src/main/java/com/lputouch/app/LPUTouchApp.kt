@@ -12,8 +12,10 @@ import com.lputouch.app.data.prefs.SecureStore
 import com.lputouch.app.data.prefs.SessionStore
 import com.lputouch.app.data.repo.AuthRepository
 import com.lputouch.app.data.repo.StudentRepository
+import coil.ImageLoader
+import coil.ImageLoaderFactory
 
-class LPUTouchApp : Application() {
+class LPUTouchApp : Application(), ImageLoaderFactory {
 
     lateinit var sessionStore: SessionStore
         private set
@@ -54,5 +56,11 @@ class LPUTouchApp : Application() {
                 ).show()
             }
         }
+    }
+
+    override fun newImageLoader(): ImageLoader {
+        return ImageLoader.Builder(this)
+            .okHttpClient { ApiClient.baseHttpClient(sessionStore) }
+            .build()
     }
 }

@@ -252,12 +252,12 @@ class StudentRepository(
             }
         }
         
-        val attendanceMap = db.attendanceDao().getAll().associate { it.courseCode to it.faculty }
+        val attendanceMap = db.attendanceDao().getAll().associate { it.courseCode.trim().uppercase() to it.faculty }
         
         return db.timetableDao().getAll().map {
-            val cCode = it.courseCode.takeIf { c -> c.isNotBlank() } 
+            val cCode = (it.courseCode.takeIf { c -> c.isNotBlank() } 
                 ?: Regex("(?:C:|Course:)\\s*([^ /]+)").find(it.description)?.groupValues?.get(1) 
-                ?: ""
+                ?: "").trim().uppercase()
                 
             val stitchedFaculty = it.facultyName.takeIf { f -> f.isNotBlank() } 
                 ?: attendanceMap[cCode]?.takeIf { f -> f.isNotBlank() } 

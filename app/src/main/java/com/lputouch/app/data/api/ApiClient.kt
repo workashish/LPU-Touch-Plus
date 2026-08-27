@@ -17,7 +17,7 @@ object ApiClient {
 
     private val gson: Gson = GsonBuilder().create()
 
-    private fun baseHttpClient(sessionStore: SessionStore): OkHttpClient {
+    fun baseHttpClient(sessionStore: SessionStore): OkHttpClient {
         val logging = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         }
