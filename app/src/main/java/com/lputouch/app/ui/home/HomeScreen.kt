@@ -5,9 +5,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -223,20 +220,26 @@ fun HomeScreen(
             }
 
             item {
-                // Calculate grid height dynamically: 4 items per row, ~88dp per row
-                val rows = (quickLinks.size + 3) / 4
-                val gridHeight = (rows * 88).dp
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(4),
-                    modifier = Modifier
-                        .heightIn(min = gridHeight)
-                        .padding(horizontal = 16.dp),
-                    userScrollEnabled = false,
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                // Non-lazy grid layout — safe inside LazyColumn (no infinite height issue)
+                Column(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    items(quickLinks) { tile ->
-                        SmallTileCard(tile, onClick = { onOpen(tile.route) })
+                    quickLinks.chunked(4).forEach { row ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            row.forEach { tile ->
+                                Box(modifier = Modifier.weight(1f)) {
+                                    SmallTileCard(tile, onClick = { onOpen(tile.route) })
+                                }
+                            }
+                            // Fill remaining space if row is not full
+                            repeat(4 - row.size) {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
+                        }
                     }
                 }
             }
