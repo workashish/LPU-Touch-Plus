@@ -25,7 +25,9 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.Button
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,6 +45,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun SettingsScreen(
     sessionStore: SessionStore,
+    onClearCache: suspend () -> Unit,
     onBack: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
@@ -106,6 +109,23 @@ fun SettingsScreen(
                             }
                         },
                     )
+                }
+            }
+
+            SettingCard(title = "Storage & Data") {
+                SettingRow(
+                    label = "Clear Local Cache",
+                    subtitle = "Deletes offline timetables, attendance, and results. Does not log you out.",
+                ) {
+                    val context = LocalContext.current
+                    Button(onClick = {
+                        scope.launch {
+                            onClearCache()
+                            android.widget.Toast.makeText(context, "Cache cleared successfully", android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    }) {
+                        Text("Clear Cache")
+                    }
                 }
             }
 

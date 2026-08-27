@@ -114,6 +114,14 @@ class StudentRepository(
         } ?: emptyList()
     }
 
+    suspend fun clearAllCache() {
+        try {
+            db.clearAllTables()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     suspend fun getStudentBasicInfo(): StudentBasicInfo? {
         return withFreshSession { uid, token, deviceId ->
             umsApi.studentBasicInfo(uid, token, deviceId)
@@ -233,6 +241,7 @@ class StudentRepository(
                             courseCode = it.courseCode ?: "",
                             facultyName = it.facultyName ?: "",
                             roomNo = it.roomNo ?: "",
+                            description = it.description ?: "",
                         )
                     }
                 )
@@ -246,6 +255,7 @@ class StudentRepository(
                 courseCode = it.courseCode,
                 facultyName = it.facultyName,
                 roomNo = it.roomNo,
+                description = it.description,
             )
         }
     }
@@ -266,7 +276,7 @@ class StudentRepository(
                             description = it.description ?: "",
                             uploadedBy = it.uploadedBy ?: "",
                             entryDate = it.entryDate ?: "",
-                            isNew = (it.isNew ?: "").equals("True", ignoreCase = true),
+                            isNew = it.isNew == "1" || it.isNew.equals("true", ignoreCase = true),
                         )
                     }
                 )

@@ -171,7 +171,7 @@ fun MainScreen(
                     onBack = { navController.popBackStack() },
                 )
             }
-            composable(Routes.SETTINGS) { SettingsScreen(sessionStore, onBack = { navController.popBackStack() }) }
+            composable(Routes.SETTINGS) { SettingsScreen(sessionStore, onClearCache = { studentRepository.clearAllCache() }, onBack = { navController.popBackStack() }) }
             composable(Routes.MESSAGES) { MessagesScreen(studentRepository, onBack = { navController.popBackStack() }) }
             composable(Routes.PLACEMENT) { PlacementScreen(studentRepository, onBack = { navController.popBackStack() }) }
             composable(Routes.MENTOR_REMARKS) { MentorRemarksScreen(studentRepository, onBack = { navController.popBackStack() }) }

@@ -45,6 +45,7 @@ data class CachedTimetableEntity(
     val courseCode: String,
     val facultyName: String,
     val roomNo: String,
+    val description: String,
     val cachedAt: Long = System.currentTimeMillis(),
 )
 
