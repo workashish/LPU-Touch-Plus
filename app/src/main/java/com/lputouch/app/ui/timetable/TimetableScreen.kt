@@ -219,10 +219,15 @@ private fun TimetableCard(t: TimetableItem) {
     val parts = desc.split("/")
     val type = parts.firstOrNull()?.trim()?.takeIf { it.isNotBlank() } ?: "Course"
 
-    val displayTitle = t.courseName ?: t.subjectName ?: t.courseCode ?: courseCodeMatchFinal ?: if (isAvailableShortly) "Notice" else type
+    val displayTitle = t.courseName?.takeIf { it.isNotBlank() } 
+        ?: t.subjectName?.takeIf { it.isNotBlank() } 
+        ?: t.courseCode?.takeIf { it.isNotBlank() } 
+        ?: courseCodeMatchFinal?.takeIf { it.isNotBlank() } 
+        ?: if (isAvailableShortly) "Notice" else type
+        
     val displaySubtitle = if (isAvailableShortly) desc else (type + (sectionMatch?.let { " • Sec $it" } ?: ""))
-    val displayRoom = t.roomNo ?: roomMatch
-    val displayFaculty = t.facultyName
+    val displayRoom = t.roomNo?.takeIf { it.isNotBlank() } ?: roomMatch
+    val displayFaculty = t.facultyName?.takeIf { it.isNotBlank() }
 
     if (isAvailableShortly) {
         // Special Notice Card Design

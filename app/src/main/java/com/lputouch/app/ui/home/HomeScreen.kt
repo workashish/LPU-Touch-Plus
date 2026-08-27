@@ -408,9 +408,13 @@ private fun ClassWidgetCard(t: TimetableItem) {
     val parts = desc.split("/")
     val type = parts.firstOrNull()?.trim()?.takeIf { it.isNotBlank() } ?: "Course"
 
-    val displayTitle = t.courseName ?: t.subjectName ?: t.courseCode ?: courseCodeFix ?: if (isAvailableShortly) "Notice" else type
-    val displayRoom = t.roomNo ?: roomFix
-    val displayFaculty = t.facultyName
+    val displayTitle = t.courseName?.takeIf { it.isNotBlank() } 
+        ?: t.subjectName?.takeIf { it.isNotBlank() } 
+        ?: t.courseCode?.takeIf { it.isNotBlank() } 
+        ?: courseCodeFix?.takeIf { it.isNotBlank() } 
+        ?: if (isAvailableShortly) "Notice" else type
+    val displayRoom = t.roomNo?.takeIf { it.isNotBlank() } ?: roomFix
+    val displayFaculty = t.facultyName?.takeIf { it.isNotBlank() }
     
     Card(
         modifier = Modifier.width(220.dp),
