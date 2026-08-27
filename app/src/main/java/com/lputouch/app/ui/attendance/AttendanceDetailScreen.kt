@@ -54,7 +54,10 @@ fun AttendanceDetailScreen(
             loading -> LoadingState(Modifier.padding(padding))
             items.isEmpty() -> EmptyState("No attendance detail available", Modifier.padding(padding))
             else -> {
-                val present = items.count { it.status?.equals("P", ignoreCase = true) == true }
+                val present = items.count { 
+                    val s = it.status?.uppercase() ?: ""
+                    s.startsWith("P") || s.contains("PRESENT") || s.startsWith("D") || s.contains("DUTY") || s == "O" 
+                }
                 val absent = items.size - present
 
                 LazyColumn(
@@ -86,7 +89,9 @@ fun AttendanceDetailScreen(
                     }
 
                     items(items) { att ->
-                        val isPresent = att.status?.equals("P", ignoreCase = true) == true
+                        val statusStr = att.status?.uppercase() ?: ""
+                        val isPresent = statusStr.startsWith("P") || statusStr.contains("PRESENT") || statusStr.startsWith("D") || statusStr.contains("DUTY") || statusStr == "O"
+                        
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
@@ -106,7 +111,7 @@ fun AttendanceDetailScreen(
                                     att.facultyName?.takeIf { it.isNotBlank() }?.let { Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                                 }
                                 Text(
-                                    text = if (isPresent) "Present" else "Absent",
+                                    text = att.status ?: "—",
                                     style = MaterialTheme.typography.labelMedium,
                                     color = if (isPresent) Color(0xFF2E7D32) else Color(0xFFC62828),
                                     fontWeight = FontWeight.SemiBold,
