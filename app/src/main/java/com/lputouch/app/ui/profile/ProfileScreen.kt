@@ -44,13 +44,9 @@ fun ProfileScreen(
     suspend fun load() {
         error = null
         try {
-            coroutineScope {
-                val sectionsDeferred = async { studentRepository.getProfile() }
-                val basicInfoDeferred = async { studentRepository.getStudentBasicInfo() }
-                
-                profileSections = sectionsDeferred.await()
-                basicInfo = basicInfoDeferred.await()
-            }
+            // Fetch sequentially to prevent SessionStore race conditions during token reads
+            basicInfo = studentRepository.getStudentBasicInfo()
+            profileSections = studentRepository.getProfile()
         } catch (e: Exception) {
             error = e.message ?: "Failed to load"
         }
@@ -122,7 +118,8 @@ fun ProfileScreen(
                                 modifier = Modifier.size(88.dp).clip(CircleShape),
                                 contentAlignment = Alignment.Center,
                             ) {
-                                if (info?.studentPicture.isNullOrBlank()) {
+                                val picUrl = info?.studentPicture?.takeIf { it.isNotBlank() } ?: info?.picture
+                                if (picUrl.isNullOrBlank()) {
                                     Box(
                                         modifier = Modifier
                                             .fillMaxSize()
@@ -138,7 +135,7 @@ fun ProfileScreen(
                                     }
                                 } else {
                                     AsyncImage(
-                                        model = info?.studentPicture,
+                                        model = picUrl,
                                         contentDescription = "Profile Picture",
                                         contentScale = ContentScale.Crop,
                                         modifier = Modifier.fillMaxSize()

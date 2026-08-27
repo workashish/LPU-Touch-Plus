@@ -251,13 +251,24 @@ class StudentRepository(
                 TimetableWidgetReceiver.update(context)
             }
         }
+        
+        val attendanceMap = db.attendanceDao().getAll().associate { it.courseCode to it.faculty }
+        
         return db.timetableDao().getAll().map {
+            val cCode = it.courseCode.takeIf { c -> c.isNotBlank() } 
+                ?: Regex("C:\\s*:?\\s*([^ /]+)").find(it.description)?.groupValues?.get(1) 
+                ?: ""
+                
+            val stitchedFaculty = it.facultyName.takeIf { f -> f.isNotBlank() } 
+                ?: attendanceMap[cCode]?.takeIf { f -> f.isNotBlank() } 
+                ?: ""
+
             TimetableItem(
                 day = it.day,
                 attendanceTime = it.attendanceTime,
                 courseName = it.courseName,
                 courseCode = it.courseCode,
-                facultyName = it.facultyName,
+                facultyName = stitchedFaculty,
                 roomNo = it.roomNo,
                 description = it.description,
             )

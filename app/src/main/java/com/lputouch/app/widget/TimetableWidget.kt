@@ -32,6 +32,8 @@ class TimetableWidget : GlanceAppWidget() {
         // Run database query on background thread implicitly as provideGlance is a suspend fun
         val db = AppDatabase.get(context)
         val allItems = db.timetableDao().getAll()
+        val allAttendance = db.attendanceDao().getAll()
+        val attendanceMap = allAttendance.associate { it.courseCode to it.faculty }
         
         val cal = Calendar.getInstance()
         val dayOfWeek = cal.get(Calendar.DAY_OF_WEEK)
@@ -40,6 +42,15 @@ class TimetableWidget : GlanceAppWidget() {
         
         val todayClasses = allItems
             .filter { it.day == appDay }
+            .map {
+                val cCode = it.courseCode.takeIf { c -> c.isNotBlank() } 
+                    ?: Regex("C:\\s*:?\\s*([^ /]+)").find(it.description)?.groupValues?.get(1) 
+                    ?: ""
+                val stitchedFaculty = it.facultyName.takeIf { f -> f.isNotBlank() } 
+                    ?: attendanceMap[cCode]?.takeIf { f -> f.isNotBlank() } 
+                    ?: ""
+                it.copy(facultyName = stitchedFaculty)
+            }
             .sortedBy { item ->
                 val timeStr = item.attendanceTime
                 try {
@@ -90,12 +101,14 @@ class TimetableWidget : GlanceAppWidget() {
                         )
                     )
                 } else {
-                    Column(
+                    androidx.glance.appwidget.lazy.LazyColumn(
                         modifier = GlanceModifier.fillMaxSize()
                     ) {
                         classes.forEach { t ->
-                            ClassItem(t)
-                            Spacer(modifier = GlanceModifier.height(8.dp))
+                            item {
+                                ClassItem(t)
+                                Spacer(modifier = GlanceModifier.height(8.dp))
+                            }
                         }
                     }
                 }
