@@ -156,13 +156,23 @@ data class RplResult(
 
 /** GET ums /GetMakeupandAdjustmentforStudents/{token}/{deviceId}/{uid} */
 data class MakeupClass(
+    // Fields matching actual UMS API response
+    @SerializedName("CourseCode") val courseCode: String? = null,
+    @SerializedName("LectureTime") val lectureTime: String? = null,
+    @SerializedName("MakeupAdjustmentBy") val makeupBy: String? = null,
+    @SerializedName("MakeupAdjustmentDate") val makeupDate: String? = null,
+    @SerializedName("RoomNo") val roomNo: String? = null,
+    @SerializedName("SectionNo") val sectionNo: String? = null,
+    @SerializedName("AttendanceType") val attendanceType: String? = null,
+    @SerializedName("Category") val category: String? = null,
+    @SerializedName("GroupNo") val groupNo: String? = null,
+    // Legacy fallback fields (in case server sends old format)
     @SerializedName("SubjectName") val subjectName: String? = null,
     @SerializedName("CourseName") val courseName: String? = null,
     @SerializedName("AttendanceDate") val attendanceDate: String? = null,
     @SerializedName("AttendanceTime") val attendanceTime: String? = null,
     @SerializedName("Description") val description: String? = null,
     @SerializedName("Day") val day: String? = null,
-    @SerializedName("RoomNo") val roomNo: String? = null,
     @SerializedName("FacultyName") val facultyName: String? = null,
     @SerializedName("Type") val type: String? = null,
 )

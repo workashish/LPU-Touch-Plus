@@ -1,6 +1,8 @@
 package com.lputouch.app.ui.more
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -316,22 +318,49 @@ fun MakeupScreen(
         onRetry = { scope.launch { loading = true; load(); loading = false } },
         itemKey = { "${it.subjectName}-${it.attendanceDate}-${it.hashCode()}" },
     ) { m ->
+        // Determine display values — handle both new and legacy API formats
+        val courseName = m.courseCode?.takeIf { it.isNotBlank() }
+            ?: m.subjectName?.takeIf { it.isNotBlank() }
+            ?: m.courseName?.takeIf { it.isNotBlank() }
+            ?: ""
+        val time = m.lectureTime?.takeIf { it.isNotBlank() }
+            ?: m.attendanceTime?.takeIf { it.isNotBlank() }
+            ?: ""
+        val faculty = m.makeupBy?.takeIf { it.isNotBlank() }
+            ?.substringBefore(":")?.trim()
+            ?: m.facultyName?.takeIf { it.isNotBlank() }
+            ?: ""
+        val date = m.makeupDate?.takeIf { it.isNotBlank() }
+            ?: m.attendanceDate?.takeIf { it.isNotBlank() }
+            ?: ""
+        val category = m.category?.takeIf { it.isNotBlank() }
+            ?: m.type?.takeIf { it.isNotBlank() }
+            ?: ""
+        val section = m.sectionNo?.takeIf { it.isNotBlank() }
+            ?: m.day?.takeIf { it.isNotBlank() }
+            ?: ""
+        val attType = m.attendanceType?.takeIf { it.isNotBlank() } ?: ""
+        val description = m.description?.takeIf { it.isNotBlank() } ?: ""
+
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
             shape = RoundedCornerShape(16.dp),
         ) {
             Column(Modifier.padding(16.dp)) {
+                // Row 1: Course name + Category badge
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        m.subjectName ?: m.courseName ?: "",
+                        courseName,
                         style = MaterialTheme.typography.titleSmall,
                         modifier = Modifier.weight(1f),
+                        maxLines = 2,
                     )
-                    m.type?.takeIf { it.isNotBlank() }?.let { t ->
+                    category.takeIf { it.isNotBlank() }?.let { t ->
+                        Spacer(Modifier.width(8.dp))
                         Card(
                             colors = CardDefaults.cardColors(
-                                containerColor = if (t.contains("makeup", true) || t.contains("Makeup", true))
+                                containerColor = if (t.contains("makeup", true))
                                     MaterialTheme.colorScheme.primaryContainer
                                 else MaterialTheme.colorScheme.tertiaryContainer
                             ),
@@ -346,21 +375,50 @@ fun MakeupScreen(
                         }
                     }
                 }
-                m.description?.takeIf { it.isNotBlank() }?.let {
+
+                // Description
+                description.takeIf { it.isNotBlank() }?.let {
                     Spacer(Modifier.height(4.dp))
                     Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                m.day?.takeIf { it.isNotBlank() }?.let {
-                    Spacer(Modifier.height(4.dp))
-                    Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+
+                // Section + Type tags
+                val tags = listOfNotNull(
+                    section.takeIf { it.isNotBlank() }?.let { "Sec: $it" },
+                    attType.takeIf { it.isNotBlank() },
+                    m.groupNo?.takeIf { it.isNotBlank() }?.let { "Grp: $it" },
+                )
+                if (tags.isNotEmpty()) {
+                    Spacer(Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        tags.forEach { tag ->
+                            Card(
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                                ),
+                                shape = RoundedCornerShape(6.dp),
+                            ) {
+                                Text(
+                                    tag,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                )
+                            }
+                        }
+                    }
                 }
-                listOf(
-                    "Date" to m.attendanceDate,
-                    "Time" to m.attendanceTime,
-                    "Room" to m.roomNo,
-                    "Faculty" to m.facultyName,
-                ).forEach { (k, v) ->
-                    if (!v.isNullOrBlank()) {
+
+                // Details grid: Date, Time, Room, Faculty
+                val details = listOfNotNull(
+                    date.takeIf { it.isNotBlank() }?.let { "Date" to it },
+                    time.takeIf { it.isNotBlank() }?.let { "Time" to it },
+                    m.roomNo?.takeIf { it.isNotBlank() }?.let { "Room" to it },
+                    faculty.takeIf { it.isNotBlank() }?.let { "Faculty" to it },
+                )
+                if (details.isNotEmpty()) {
+                    Spacer(Modifier.height(10.dp))
+                    details.forEach { (k, v) ->
                         Spacer(Modifier.height(4.dp))
                         Row {
                             Text(k, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(0.3f))
