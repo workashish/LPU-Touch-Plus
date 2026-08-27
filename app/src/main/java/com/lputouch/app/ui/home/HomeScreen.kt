@@ -402,14 +402,14 @@ private fun ClassWidgetCard(t: TimetableItem) {
     val desc = t.description?.replace("\r", "")?.replace("\n", "")?.trim() ?: ""
     val isAvailableShortly = desc.contains("available Shortly", ignoreCase = true)
     
-    val courseCodeMatch = Regex("C:\\s*([^ /]+)").find(desc)?.groupValues?.get(1)
-    val roomMatch = Regex("R:\\s*([^ /]+)").find(desc)?.groupValues?.get(1)
+    val courseCodeFix = Regex("C:\\s*:?\\s*([^ /]+)").find(desc)?.groupValues?.get(1)
+    val roomFix = Regex("R:\\s*:?\\s*([^ /]+)").find(desc)?.groupValues?.get(1)
     
     val parts = desc.split("/")
     val type = parts.firstOrNull()?.trim()?.takeIf { it.isNotBlank() } ?: "Course"
 
-    val displayTitle = t.courseName ?: t.subjectName ?: t.courseCode ?: courseCodeMatch ?: if (isAvailableShortly) "Notice" else type
-    val displayRoom = t.roomNo ?: roomMatch
+    val displayTitle = t.courseName ?: t.subjectName ?: t.courseCode ?: courseCodeFix ?: if (isAvailableShortly) "Notice" else type
+    val displayRoom = t.roomNo ?: roomFix
     val displayFaculty = t.facultyName
     
     Card(

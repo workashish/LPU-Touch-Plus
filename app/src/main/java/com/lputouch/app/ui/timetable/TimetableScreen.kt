@@ -151,7 +151,24 @@ fun TimetableScreen(
                 items.isEmpty() -> EmptyState("No timetable available", Modifier.fillMaxSize())
 
                 else -> {
-                    val currentDayItems = items.filter { it.day == selectedTabIndex + 1 }.sortedBy { it.attendanceTime }
+                    val currentDayItems = items.filter { it.day == selectedTabIndex + 1 }.sortedBy { item ->
+                        val timeStr = item.attendanceTime ?: ""
+                        try {
+                            val startPart = timeStr.substringBefore("-").trim()
+                            val amPm = timeStr.substringAfterLast(" ").trim().uppercase()
+                            
+                            val parts = startPart.split(":")
+                            var hour = parts.getOrNull(0)?.toIntOrNull() ?: 0
+                            val minute = parts.getOrNull(1)?.substringBefore(" ")?.toIntOrNull() ?: 0
+                            
+                            if (amPm.contains("PM") && hour < 12) hour += 12
+                            if (amPm.contains("AM") && hour == 12) hour = 0
+                            
+                            hour * 60 + minute
+                        } catch (e: Exception) {
+                            0
+                        }
+                    }
                     
                     PullToRefreshBox(
                         isRefreshing = refreshing,
@@ -189,15 +206,20 @@ private fun TimetableCard(t: TimetableItem) {
     val desc = t.description?.replace("\r", "")?.replace("\n", "")?.trim() ?: ""
     val isAvailableShortly = desc.contains("available Shortly", ignoreCase = true)
     
-    // Improved Regex to handle arbitrary spacing and newlines
-    val courseCodeMatch = Regex("C:\\s*([^ /]+)").find(desc)?.groupValues?.get(1)
-    val roomMatch = Regex("R:\\s*([^ /]+)").find(desc)?.groupValues?.get(1)
-    val sectionMatch = Regex("S:\\s*([^ /]+)").find(desc)?.groupValues?.get(1)
+    // Improved Regex to handle arbitrary spacing and newlines, adding missing colons!
+    val courseCodeMatch = Regex("C:\\s*([^ /]+)").find(desc)?.groupValues?.get(1) ?: Regex("C:\\s*:?\\s*([^ /]+)").find(desc)?.groupValues?.get(1) ?: Regex("C:([^ /]+)").find(desc)?.groupValues?.get(1)
+    val courseCodeFix = Regex("C:\\s*:?\\s*([^ /]+)").find(desc)?.groupValues?.get(1)
+    val roomFix = Regex("R:\\s*:?\\s*([^ /]+)").find(desc)?.groupValues?.get(1)
+    val sectionFix = Regex("S:\\s*:?\\s*([^ /]+)").find(desc)?.groupValues?.get(1)
+    
+    val courseCodeMatchFinal = courseCodeFix ?: courseCodeMatch
+    val roomMatch = roomFix
+    val sectionMatch = sectionFix
     
     val parts = desc.split("/")
     val type = parts.firstOrNull()?.trim()?.takeIf { it.isNotBlank() } ?: "Course"
 
-    val displayTitle = t.courseName ?: t.subjectName ?: t.courseCode ?: courseCodeMatch ?: if (isAvailableShortly) "Notice" else type
+    val displayTitle = t.courseName ?: t.subjectName ?: t.courseCode ?: courseCodeMatchFinal ?: if (isAvailableShortly) "Notice" else type
     val displaySubtitle = if (isAvailableShortly) desc else (type + (sectionMatch?.let { " • Sec $it" } ?: ""))
     val displayRoom = t.roomNo ?: roomMatch
     val displayFaculty = t.facultyName
