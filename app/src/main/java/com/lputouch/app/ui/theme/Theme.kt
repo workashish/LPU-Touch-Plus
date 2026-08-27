@@ -10,16 +10,28 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import androidx.compose.material3.Typography
+import androidx.compose.material3.Shapes
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.unit.dp
 
-// Refined Palette
-val PrimaryLight = Color(0xFF1E3A8A) // Deeper, more professional blue
-val PrimaryDark = Color(0xFF60A5FA)
-val AccentLight = Color(0xFFF59E0B) // Richer amber/orange
-val AccentDark = Color(0xFFFCD34D)
-val SurfaceLight = Color(0xFFF8FAFC) // Slate-tinted off-white
-val SurfaceDark = Color(0xFF0F172A) // Deep slate for dark mode
+// ==========================================
+// 🎨 PREMIUM COLOR PALETTE
+// ==========================================
+val PrimaryLight = Color(0xFF4F46E5) // Vibrant Indigo
+val PrimaryDark = Color(0xFF818CF8)  
+val AccentLight = Color(0xFFEC4899)  // Pink accent
+val AccentDark = Color(0xFFF472B6)
+val SurfaceLight = Color(0xFFF8FAFC)
+val SurfaceDark = Color(0xFF0F172A)
 val SurfaceVariantLight = Color(0xFFFFFFFF)
 val SurfaceVariantDark = Color(0xFF1E293B)
+val GradientStart = Color(0xFF4F46E5)
+val GradientEnd = Color(0xFF7C3AED)
 
 private val LightColors = lightColorScheme(
     primary = PrimaryLight,
@@ -58,7 +70,52 @@ private val DarkColors = darkColorScheme(
     surface = SurfaceDark,
     onSurface = Color(0xFFF8FAFC),
     surfaceVariant = SurfaceVariantDark,
-    onSurfaceVariant = Color(0xFFCBD5E1),
+    onSurfaceVariant = Color(0xFF94A3B8),
+)
+
+// ==========================================
+// 🖋 PREMIUM TYPOGRAPHY
+// ==========================================
+val AppTypography = Typography(
+    displayLarge = TextStyle(
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.Bold,
+        fontSize = 32.sp,
+        letterSpacing = (-1).sp
+    ),
+    headlineMedium = TextStyle(
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 24.sp,
+        letterSpacing = (-0.5).sp
+    ),
+    titleLarge = TextStyle(
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 20.sp
+    ),
+    bodyLarge = TextStyle(
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.Normal,
+        fontSize = 16.sp,
+        lineHeight = 24.sp
+    ),
+    labelMedium = TextStyle(
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.Medium,
+        fontSize = 12.sp,
+        letterSpacing = 0.5.sp
+    )
+)
+
+// ==========================================
+// 📐 PREMIUM SHAPES
+// ==========================================
+val AppShapes = Shapes(
+    small = RoundedCornerShape(8.dp),
+    medium = RoundedCornerShape(16.dp),
+    large = RoundedCornerShape(24.dp),
+    extraLarge = RoundedCornerShape(32.dp)
 )
 
 @Composable
@@ -77,6 +134,8 @@ fun LPUTouchPlusTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
+        typography = AppTypography,
+        shapes = AppShapes,
         content = content,
     )
 }

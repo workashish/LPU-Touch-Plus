@@ -3,6 +3,10 @@ package com.lputouch.app.ui.profile
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.foundation.border
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -105,17 +109,29 @@ fun ProfileScreen(
                     val regNo = info?.registrationNumber ?: basicSection?.values?.find { it.title.equals("Registration No.", ignoreCase = true) }?.value ?: ""
 
                     // Hero card
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-                        shape = RoundedCornerShape(20.dp),
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .shadow(16.dp, RoundedCornerShape(24.dp))
+                            .clip(RoundedCornerShape(24.dp))
+                            .background(
+                                Brush.linearGradient(
+                                    colors = listOf(
+                                        com.lputouch.app.ui.theme.GradientStart,
+                                        com.lputouch.app.ui.theme.GradientEnd
+                                    )
+                                )
+                            )
                     ) {
                         Column(
-                            modifier = Modifier.fillMaxWidth().padding(20.dp),
+                            modifier = Modifier.fillMaxWidth().padding(24.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
                             Box(
-                                modifier = Modifier.size(88.dp).clip(CircleShape),
+                                modifier = Modifier
+                                    .size(100.dp)
+                                    .border(4.dp, Color.White.copy(alpha = 0.5f), CircleShape)
+                                    .clip(CircleShape),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 val picUrl = info?.studentPicture?.takeIf { it.isNotBlank() } ?: info?.picture

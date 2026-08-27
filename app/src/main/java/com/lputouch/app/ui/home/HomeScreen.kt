@@ -104,30 +104,19 @@ fun HomeScreen(
     }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Dashboard", fontWeight = FontWeight.SemiBold) },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.onBackground,
-                ),
-                actions = {
-                    IconButton(onClick = { onLogout() }) {
-                        Icon(Icons.Filled.Logout, contentDescription = "Logout")
-                    }
-                },
-            )
-        },
+        topBar = {}
+
     ) { padding ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
                 .padding(padding),
             contentPadding = PaddingValues(bottom = 32.dp)
         ) {
-            // Welcome card
+            // Hero Header
             item {
-                WelcomeCard(profile = profile, name = studentName)
+                HeroHeader(profile = profile, name = studentName, onLogout = onLogout)
             }
 
             // Fee alert banner
@@ -228,75 +217,70 @@ fun HomeScreen(
 }
 
 @Composable
-private fun WelcomeCard(profile: StudentBasicInfo?, name: String) {
-    Card(
+private fun HeroHeader(profile: StudentBasicInfo?, name: String, onLogout: () -> Unit) {
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 8.dp),
-        shape = RoundedCornerShape(24.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    Brush.linearGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.primary,
-                            MaterialTheme.colorScheme.tertiary
-                        )
+            .clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp))
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        com.lputouch.app.ui.theme.GradientStart,
+                        com.lputouch.app.ui.theme.GradientEnd
                     )
                 )
+            )
+            .padding(top = 48.dp, bottom = 32.dp, start = 24.dp, end = 24.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.Top
         ) {
-            Row(
-                modifier = Modifier.padding(24.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        text = "Hi, $name 👋",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    profile?.programName?.let { prog ->
-                        if (prog.isNotBlank()) {
-                            Spacer(Modifier.height(4.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = "Good Morning,",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.White.copy(alpha = 0.8f)
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = "$name 👋",
+                    style = MaterialTheme.typography.displaySmall,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                profile?.programName?.let { prog ->
+                    if (prog.isNotBlank()) {
+                        Spacer(Modifier.height(8.dp))
+                        Box(
+                            modifier = Modifier
+                                .background(Color.White.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
                             Text(
                                 text = prog.substringAfter("L:").substringBefore("(").trim().ifBlank { prog },
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color.White.copy(alpha = 0.85f),
-                                maxLines = 2,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = Color.White,
+                                maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
                         }
                     }
-                    Spacer(Modifier.height(12.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        profile?.cgpa?.takeIf { it.isNotBlank() }?.let { cgpa ->
-                            StatPill("CGPA $cgpa")
-                        }
-                        profile?.studentStatus?.takeIf { it.isNotBlank() }?.let { status ->
-                            StatPill(status)
-                        }
                     }
                 }
-                Spacer(Modifier.width(12.dp))
-                Box(
+                
+                IconButton(
+                    onClick = onLogout,
                     modifier = Modifier
-                        .size(64.dp)
                         .background(Color.White.copy(alpha = 0.2f), CircleShape)
-                        .clip(CircleShape),
-                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Filled.Person, contentDescription = null, tint = Color.White, modifier = Modifier.size(36.dp))
+                    Icon(Icons.Filled.Logout, contentDescription = "Logout", tint = Color.White)
                 }
             }
         }
     }
-}
 
 @Composable
 private fun StatPill(text: String) {

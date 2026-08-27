@@ -22,10 +22,16 @@ import androidx.glance.layout.padding
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
-
 import com.lputouch.app.data.db.AppDatabase
 import com.lputouch.app.data.db.CachedTimetableEntity
 import java.util.Calendar
+import androidx.glance.action.clickable
+import androidx.glance.appwidget.action.actionStartActivity
+import androidx.glance.layout.width
+import androidx.glance.appwidget.cornerRadius
+import com.lputouch.app.MainActivity
+import android.content.ComponentName
+import androidx.glance.LocalContext
 
 class TimetableWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
@@ -104,10 +110,27 @@ class TimetableWidget : GlanceAppWidget() {
                     androidx.glance.appwidget.lazy.LazyColumn(
                         modifier = GlanceModifier.fillMaxSize()
                     ) {
+                        item {
+                            // Header
+                            Row(
+                                modifier = GlanceModifier.fillMaxWidth().padding(bottom = 12.dp, top = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "📅 Today's Classes",
+                                    style = TextStyle(
+                                        color = GlanceTheme.colors.onSurface,
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                )
+                            }
+                        }
+                        
                         classes.forEach { t ->
                             item {
                                 ClassItem(t)
-                                Spacer(modifier = GlanceModifier.height(8.dp))
+                                Spacer(modifier = GlanceModifier.height(12.dp))
                             }
                         }
                     }
@@ -134,28 +157,53 @@ class TimetableWidget : GlanceAppWidget() {
             
         val displayRoom = t.roomNo.takeIf { it.isNotBlank() } ?: roomFix
         
-        // Glance does not support Cards out of the box with elevation, so we build it manually
+        // Timeline Layout Card
+        val context = LocalContext.current
         Box(
             modifier = GlanceModifier
                 .fillMaxWidth()
+                .cornerRadius(16.dp)
                 .background(
                     if (isAvailableShortly) GlanceTheme.colors.primaryContainer 
                     else GlanceTheme.colors.surfaceVariant
                 )
                 .padding(12.dp)
+                .clickable(actionStartActivity(android.content.Intent(context, MainActivity::class.java).apply { 
+                    flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK 
+                }))
         ) {
-            Column {
+            Row(
+                modifier = GlanceModifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Left side: Time
                 if (!isAvailableShortly && t.attendanceTime.isNotBlank()) {
+                    val formattedTime = t.attendanceTime.split("-").firstOrNull()?.trim() ?: t.attendanceTime
                     Text(
-                        text = t.attendanceTime,
+                        text = formattedTime,
+                        modifier = GlanceModifier.width(60.dp),
                         style = TextStyle(
                             color = GlanceTheme.colors.primary,
-                            fontSize = 12.sp,
+                            fontSize = 14.sp,
                             fontWeight = FontWeight.Bold
                         )
                     )
-                    Spacer(modifier = GlanceModifier.height(4.dp))
+                    
+                    Spacer(modifier = GlanceModifier.width(8.dp))
+                    
+                    // Vertical Divider
+                    Box(
+                        modifier = GlanceModifier
+                            .width(2.dp)
+                            .height(40.dp)
+                            .background(GlanceTheme.colors.primary)
+                    ) {}
+                    
+                    Spacer(modifier = GlanceModifier.width(12.dp))
                 }
+                
+                // Right side: Details
+                Column(modifier = GlanceModifier.defaultWeight()) {
                 
                 Text(
                     text = displayTitle,
@@ -176,7 +224,19 @@ class TimetableWidget : GlanceAppWidget() {
                         )
                     )
                 }
+                
+                t.facultyName.takeIf { it.isNotBlank() }?.let { faculty ->
+                    Spacer(modifier = GlanceModifier.height(2.dp))
+                    Text(
+                        text = "Faculty: $faculty",
+                        style = TextStyle(
+                            color = GlanceTheme.colors.onSurfaceVariant,
+                            fontSize = 12.sp
+                        )
+                    )
+                }
             }
+        }
         }
     }
 }
