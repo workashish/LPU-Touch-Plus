@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.HourglassEmpty
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,6 +41,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.lputouch.app.data.api.dto.AdmissionDocument
 import com.lputouch.app.data.repo.StudentRepository
 import com.lputouch.app.ui.components.EmptyState
+import com.lputouch.app.ui.components.ErrorState
 import com.lputouch.app.ui.components.LoadingState
 import kotlinx.coroutines.launch
 import java.io.File
@@ -51,12 +53,23 @@ import java.io.OutputStream
 fun DocumentsScreen(studentRepository: StudentRepository, onBack: () -> Unit) {
     var items by remember { mutableStateOf<List<AdmissionDocument>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
+    var refreshing by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
     var selectedDoc by remember { mutableStateOf<AdmissionDocument?>(null) }
     val scope = rememberCoroutineScope()
 
+    suspend fun load(force: Boolean = false) {
+        error = null
+        try {
+            items = studentRepository.getAdmissionDocuments()
+        } catch (e: Exception) {
+            error = e.message ?: "Failed to load documents"
+        }
+    }
+
     LaunchedEffect(Unit) {
         loading = true
-        items = studentRepository.getAdmissionDocuments()
+        load()
         loading = false
     }
 
@@ -74,14 +87,31 @@ fun DocumentsScreen(studentRepository: StudentRepository, onBack: () -> Unit) {
     ) { padding ->
         when {
             loading -> LoadingState(Modifier.padding(padding))
+            error != null && items.isEmpty() -> ErrorState(
+                message = error!!,
+                onRetry = { scope.launch { loading = true; load(); loading = false } },
+                modifier = Modifier.padding(padding),
+            )
             items.isEmpty() -> EmptyState("No documents found", Modifier.padding(padding))
-            else -> LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(padding),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+            else -> PullToRefreshBox(
+                isRefreshing = refreshing,
+                onRefresh = {
+                    scope.launch {
+                        refreshing = true
+                        load(true)
+                        refreshing = false
+                    }
+                },
+                modifier = Modifier.padding(padding),
             ) {
-                items(items, key = { it.documentDescription ?: it.hashCode().toString() }) { doc ->
-                    DocumentCard(doc, onClick = { selectedDoc = doc })
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    items(items, key = { it.documentDescription ?: it.hashCode().toString() }) { doc ->
+                        DocumentCard(doc, onClick = { selectedDoc = doc })
+                    }
                 }
             }
         }
@@ -237,7 +267,7 @@ private fun DocumentViewerDialog(doc: AdmissionDocument, onDismiss: () -> Unit) 
 private fun saveDocument(context: Context, doc: AdmissionDocument) {
     try {
         val base64 = doc.fileBase64 ?: return
-        
+
         // Extract mime type and construct extension
         var mimeType = "image/png"
         var ext = "png"
@@ -249,15 +279,16 @@ private fun saveDocument(context: Context, doc: AdmissionDocument) {
                 if (ext == "jpeg") ext = "jpg"
             }
         }
-        
+
         val clean = base64.substringAfter("base64,")
         val bytes = Base64.decode(clean, Base64.DEFAULT)
         val safeName = doc.documentDescription?.replace(Regex("[^a-zA-Z0-9.-]"), "_") ?: "document"
         val fileName = "${safeName}_${System.currentTimeMillis()}.$ext"
 
-        var outputStream: OutputStream? = null
+        var savedPath: String? = null
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            // Android 10+: Use MediaStore (no permission needed)
             val resolver = context.contentResolver
             val contentValues = ContentValues().apply {
                 put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
@@ -266,16 +297,30 @@ private fun saveDocument(context: Context, doc: AdmissionDocument) {
             }
             val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
             if (uri != null) {
-                outputStream = resolver.openOutputStream(uri)
+                resolver.openOutputStream(uri)?.use { it.write(bytes) }
+                savedPath = "Downloads/$fileName"
             }
         } else {
-            val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-            val file = File(downloadsDir, fileName)
-            outputStream = FileOutputStream(file)
+            // Android 9 and below: Try external storage, fall back to app cache
+            try {
+                val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                if (!downloadsDir.exists()) downloadsDir.mkdirs()
+                val file = File(downloadsDir, fileName)
+                FileOutputStream(file).use { it.write(bytes) }
+                savedPath = file.absolutePath
+            } catch (secE: SecurityException) {
+                // No WRITE_EXTERNAL_STORAGE permission — save to app cache instead
+                val cacheFile = File(context.cacheDir, fileName)
+                FileOutputStream(cacheFile).use { it.write(bytes) }
+                savedPath = cacheFile.absolutePath
+            }
         }
 
-        outputStream?.use { it.write(bytes) }
-        Toast.makeText(context, "Saved $fileName to Downloads", Toast.LENGTH_LONG).show()
+        if (savedPath != null) {
+            Toast.makeText(context, "Saved to $savedPath", Toast.LENGTH_LONG).show()
+        } else {
+            Toast.makeText(context, "Failed to save document", Toast.LENGTH_SHORT).show()
+        }
     } catch (e: Exception) {
         e.printStackTrace()
         Toast.makeText(context, "Failed to save document", Toast.LENGTH_SHORT).show()

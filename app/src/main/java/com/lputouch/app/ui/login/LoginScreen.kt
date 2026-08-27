@@ -191,7 +191,10 @@ fun LoginScreen(
                             error = null
                             scope.launch {
                                 when (val result = authRepository.login(userId.trim(), password)) {
-                                    is LoginResult.Success -> onLoggedIn()
+                                    is LoginResult.Success -> {
+                                        loading = false
+                                        onLoggedIn()
+                                    }
                                     is LoginResult.Error -> {
                                         error = result.message
                                         loading = false

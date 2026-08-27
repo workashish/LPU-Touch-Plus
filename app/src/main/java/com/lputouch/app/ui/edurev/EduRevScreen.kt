@@ -19,7 +19,9 @@ import com.lputouch.app.data.api.dto.EduRevCategory
 import com.lputouch.app.data.api.dto.EduRevCourse
 import com.lputouch.app.data.repo.StudentRepository
 import com.lputouch.app.ui.components.EmptyState
+import com.lputouch.app.ui.components.ErrorState
 import com.lputouch.app.ui.components.LoadingState
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,17 +30,37 @@ fun EduRevScreen(studentRepository: StudentRepository, onBack: () -> Unit) {
     var courses by remember { mutableStateOf<List<EduRevCourse>>(emptyList()) }
     var selectedCategory by remember { mutableStateOf<EduRevCategory?>(null) }
     var loading by remember { mutableStateOf(true) }
+    var error by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+
+    suspend fun loadCategories() {
+        error = null
+        try {
+            categories = studentRepository.getEduRevCategories()
+        } catch (e: Exception) {
+            error = e.message ?: "Failed to load EduRev categories"
+        }
+    }
+
+    suspend fun loadCourses(category: EduRevCategory) {
+        error = null
+        try {
+            courses = studentRepository.getEduRevCourses(category.categoryId ?: "")
+        } catch (e: Exception) {
+            error = e.message ?: "Failed to load courses"
+        }
+    }
 
     LaunchedEffect(Unit) {
         loading = true
-        categories = studentRepository.getEduRevCategories()
+        loadCategories()
         loading = false
     }
 
     LaunchedEffect(selectedCategory) {
         val cat = selectedCategory ?: return@LaunchedEffect
         loading = true
-        courses = studentRepository.getEduRevCourses(cat.categoryId ?: "")
+        loadCourses(cat)
         loading = false
     }
 
@@ -57,6 +79,11 @@ fun EduRevScreen(studentRepository: StudentRepository, onBack: () -> Unit) {
     ) { padding ->
         when {
             loading -> LoadingState(Modifier.padding(padding))
+            error != null && categories.isEmpty() && selectedCategory == null -> ErrorState(
+                message = error!!,
+                onRetry = { scope.launch { loading = true; loadCategories(); loading = false } },
+                modifier = Modifier.padding(padding),
+            )
             selectedCategory == null -> {
                 if (categories.isEmpty()) EmptyState("No EduRev content available", Modifier.padding(padding))
                 else LazyColumn(

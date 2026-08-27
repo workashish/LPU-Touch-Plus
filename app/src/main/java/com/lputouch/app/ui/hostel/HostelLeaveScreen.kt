@@ -8,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Hotel
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -16,7 +17,9 @@ import com.lputouch.app.data.api.dto.HostelLeaveBalance
 import com.lputouch.app.data.api.dto.HostelLeaveItem
 import com.lputouch.app.data.repo.StudentRepository
 import com.lputouch.app.ui.components.EmptyState
+import com.lputouch.app.ui.components.ErrorState
 import com.lputouch.app.ui.components.LoadingState
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -24,11 +27,23 @@ fun HostelLeaveScreen(studentRepository: StudentRepository, onBack: () -> Unit) 
     var history by remember { mutableStateOf<List<HostelLeaveItem>>(emptyList()) }
     var balance by remember { mutableStateOf<HostelLeaveBalance?>(null) }
     var loading by remember { mutableStateOf(true) }
+    var refreshing by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+
+    suspend fun load(force: Boolean = false) {
+        error = null
+        try {
+            balance = studentRepository.getHostelLeaveBalance()
+            history = studentRepository.getHostelLeaveHistory()
+        } catch (e: Exception) {
+            error = e.message ?: "Failed to load hostel leave data"
+        }
+    }
 
     LaunchedEffect(Unit) {
         loading = true
-        balance = studentRepository.getHostelLeaveBalance()
-        history = studentRepository.getHostelLeaveHistory()
+        load()
         loading = false
     }
 
@@ -43,7 +58,22 @@ fun HostelLeaveScreen(studentRepository: StudentRepository, onBack: () -> Unit) 
     ) { padding ->
         when {
             loading -> LoadingState(Modifier.padding(padding))
-            else -> LazyColumn(
+            error != null && history.isEmpty() && balance == null -> ErrorState(
+                message = error!!,
+                onRetry = { scope.launch { loading = true; load(); loading = false } },
+                modifier = Modifier.padding(padding),
+            )
+            else -> PullToRefreshBox(
+                isRefreshing = refreshing,
+                onRefresh = {
+                    scope.launch {
+                        refreshing = true
+                        load(true)
+                        refreshing = false
+                    }
+                },
+                modifier = Modifier.padding(padding),
+            ) { LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(padding),
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -95,6 +125,7 @@ fun HostelLeaveScreen(studentRepository: StudentRepository, onBack: () -> Unit) 
                     }
                 }
             }
+            } // PullToRefreshBox
         }
     }
 }

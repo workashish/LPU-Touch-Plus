@@ -101,13 +101,22 @@ class AuthRepository(
 
     /**
      * Silently re-login using stored credentials when the UMS AccessToken
-     * expires. Returns true if a fresh token was obtained and persisted.
+     * or JWT expires. Returns true if fresh tokens were obtained and persisted.
      */
     suspend fun refreshSession(): Boolean {
         val userName = sessionStore.currentUserId() ?: return false
         val password = sessionStore.password(userName) ?: return false
         return try {
-            val deviceId = sessionStore.deviceId.first() ?: UUID.randomUUID().toString().replace("-", "").take(16)
+            // 1. Refresh the JWT token via /security/createToken
+            val tokenResp = mobileApi.createToken(CreateTokenRequest(userName, password))
+            val newJwt = tokenResp.token
+            if (!newJwt.isNullOrEmpty()) {
+                sessionStore.updateJwtToken(newJwt)
+            }
+
+            // 2. Refresh the UMS AccessToken via encrypted PVR
+            val deviceId = sessionStore.deviceId.first()
+                ?: UUID.randomUUID().toString().replace("-", "").take(16)
             val payload = LpuCrypto.encryptLogin(
                 mapOf(
                     "UserId" to userName,

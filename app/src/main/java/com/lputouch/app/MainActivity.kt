@@ -10,6 +10,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -35,7 +36,7 @@ class MainActivity : FragmentActivity() {
             val darkMode by app.sessionStore.darkMode.collectAsState(initial = false)
             val biometricEnabled by app.sessionStore.biometricEnabled.collectAsState(initial = false)
             val pinEnabled by app.sessionStore.pinEnabled.collectAsState(initial = false)
-            var unlocked by remember { mutableStateOf(false) }
+            var unlocked by rememberSaveable { mutableStateOf(false) }
 
             // Only gate the app when the user actually enabled a lock (biometric or PIN).
             // After login there is no lock configured by default, so go straight in.

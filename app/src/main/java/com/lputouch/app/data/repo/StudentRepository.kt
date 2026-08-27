@@ -63,7 +63,7 @@ class StudentRepository(
 
     /**
      * Runs [block] with the current session. If the server reports an expired
-     * session, silently re-logins (PVR flow with stored credentials) and retries once.
+     * session, silently re-logins (refreshes both JWT + UMS AccessToken) and retries once.
      * Returns null on failure — never returns an expired/empty server object.
      */
     private suspend fun <T> withFreshSession(block: suspend (uid: String, token: String, deviceId: String) -> T?): T? {
@@ -72,10 +72,12 @@ class StudentRepository(
         val first = try {
             block(uid, token, deviceId)
         } catch (e: Exception) {
-            null
+            // SESSION_EXPIRED from OkHttp interceptor — skip straight to refresh
+            if (e.message == "SESSION_EXPIRED") null else null
         }
         if (first == null || isExpiredSession(first)) {
             if (authRepository.refreshSession()) {
+                // Re-read session after refresh (JWT + AccessToken both updated)
                 val (uid2, token2, deviceId2) = session()
                 val retried = try {
                     block(uid2, token2, deviceId2)
@@ -92,23 +94,49 @@ class StudentRepository(
     }
 
     /**
-     * UMS returns an object (or a list containing one) with a non-empty Error
-     * field when the token expires. Works for both single DTOs and lists.
+     * Detects server-side session expiry. UMS returns objects with a non-empty Error
+     * field when the token expires. This checks ANY DTO that has an `error` field
+     * via reflection, not just StudentBasicInfo.
      */
     private fun isExpiredSession(result: Any?): Boolean {
         return when (result) {
-            is StudentBasicInfo -> hasErrorField(result.error)
-            is List<*> -> result.firstOrNull() is StudentBasicInfo && hasErrorField((result.first() as StudentBasicInfo).error)
-            else -> false
+            is List<*> -> {
+                val first = result.firstOrNull()
+                first != null && hasErrorField(extractError(first))
+            }
+            else -> hasErrorField(extractError(result))
+        }
+    }
+
+    /**
+     * Generic error extraction: checks common field names used across UMS DTOs.
+     * Returns the error string if found, null otherwise.
+     */
+    private fun extractError(obj: Any?): String? {
+        if (obj == null) return null
+        return try {
+            val clazz = obj::class.java
+            // Try common error field names
+            for (fieldName in listOf("error", "Error")) {
+                val field = clazz.getDeclaredField(fieldName)
+                field.isAccessible = true
+                val value = field.get(obj)
+                if (value is String?) return value
+            }
+            null
+        } catch (e: NoSuchFieldException) {
+            null // DTO doesn't have an error field — that's fine
+        } catch (e: Exception) {
+            null
         }
     }
 
     private fun hasErrorField(err: String?): Boolean =
         !err.isNullOrBlank() && !err.equals("null", ignoreCase = true)
 
-    /** Filters out the error placeholder item the server returns when a session expires. */
+    /** Filters out items where the server returned an error (session expired placeholder). */
     private fun <T> filterExpired(items: List<T>): List<T> =
-        items.filterNot { it is StudentBasicInfo && hasErrorField((it as StudentBasicInfo).error) }
+        items.filterNot { hasErrorField(extractError(it)) }
 
     suspend fun getProfile(): List<ProfileSection> {
         return withFreshSession { uid, token, deviceId ->
@@ -305,7 +333,8 @@ class StudentRepository(
                 description = it.description,
                 uploadedBy = it.uploadedBy,
                 entryDate = it.entryDate,
-                isNew = it.isNew.toString(),
+                // Normalize to "true"/"false" string so UI badge check is reliable
+                isNew = if (it.isNew) "true" else "false",
             )
         }
     }

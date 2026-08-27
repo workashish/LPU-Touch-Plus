@@ -134,7 +134,8 @@ fun AppLockGate(
                     onClick = {
                         scope.launch {
                             sessionStore.logout()
-                            onUnlocked()
+                            // Note: loggedIn flow will emit false, triggering navigation to login.
+                            // We do NOT call onUnlocked() here — that would briefly show the main screen.
                         }
                     },
                     shape = RoundedCornerShape(12.dp),

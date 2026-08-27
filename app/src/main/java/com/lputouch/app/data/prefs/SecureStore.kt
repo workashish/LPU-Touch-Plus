@@ -38,6 +38,12 @@ class SecureStore(context: Context) {
     fun getValue(key: String): String? = prefs.getString(key, null)
 
     fun clear(userId: String? = null) {
-        prefs.edit().clear().apply()
+        if (userId != null) {
+            // Only clear the specific user's credentials
+            prefs.edit().remove("password_$userId").apply()
+        } else {
+            // Fallback: clear everything (used during full logout)
+            prefs.edit().clear().apply()
+        }
     }
 }

@@ -28,6 +28,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -54,11 +55,12 @@ fun PlacementScreen(
 ) {
     var drives by remember { mutableStateOf<List<PlacementDrive>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
+    var refreshing by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    suspend fun load() {
+    suspend fun load(force: Boolean = false) {
         error = null
         try {
             drives = studentRepository.getPlacementDrives()
@@ -85,7 +87,17 @@ fun PlacementScreen(
             loading -> LoadingState(Modifier.padding(padding))
             error != null && drives.isEmpty() -> ErrorState(error!!, onRetry = { scope.launch { loading = true; load(); loading = false } }, modifier = Modifier.padding(padding))
             drives.isEmpty() -> EmptyState("No drives available", Modifier.padding(padding))
-            else -> LazyColumn(
+            else -> PullToRefreshBox(
+                isRefreshing = refreshing,
+                onRefresh = {
+                    scope.launch {
+                        refreshing = true
+                        load(true)
+                        refreshing = false
+                    }
+                },
+                modifier = Modifier.padding(padding),
+            ) { LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(padding),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -98,6 +110,7 @@ fun PlacementScreen(
                     })
                 }
             }
+            } // PullToRefreshBox
         }
     }
 }

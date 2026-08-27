@@ -35,6 +35,13 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.Calendar
 
+/** Robust check for fee-active status. Handles "0", "false", "No", null, blank. */
+private fun isFeeActive(isFee: String?): Boolean {
+    if (isFee.isNullOrBlank()) return false
+    val v = isFee.trim().lowercase()
+    return v != "0" && v != "false" && v != "no" && v != "nil"
+}
+
 private fun parseTimeToMinutes(timeStr: String?): Int {
     if (timeStr.isNullOrBlank()) return 0
     try {
@@ -138,7 +145,7 @@ fun HomeScreen(
 
             // Fee alert banner
             val p = profile
-            if (p != null && (p.isFee ?: "0") != "0" && !p.feeText.isNullOrBlank()) {
+            if (p != null && isFeeActive(p.isFee) && !p.feeText.isNullOrBlank()) {
                 item {
                     Spacer(Modifier.height(12.dp))
                     FeeAlertBanner(p.feeText ?: "", onClick = { onOpen(Routes.FEE) })
@@ -216,10 +223,14 @@ fun HomeScreen(
             }
 
             item {
+                // Calculate grid height dynamically: 4 items per row, ~88dp per row
                 val rows = (quickLinks.size + 3) / 4
+                val gridHeight = (rows * 88).dp
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(4),
-                    modifier = Modifier.height((rows * 88).dp).padding(horizontal = 16.dp),
+                    modifier = Modifier
+                        .heightIn(min = gridHeight)
+                        .padding(horizontal = 16.dp),
                     userScrollEnabled = false,
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)

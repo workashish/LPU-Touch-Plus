@@ -33,7 +33,10 @@ abstract class AppDatabase : RoomDatabase() {
                     "lputouch.db"
                 )
                     // Cache-only DB — safe to drop and rebuild on schema change.
+                    // This avoids crashes on version bumps; cached data is re-fetched from the API.
                     .fallbackToDestructiveMigration()
+                    // Also handle destructive fallback if the DB file is corrupted.
+                    .fallbackToDestructiveMigrationOnDowngrade()
                     .build().also { INSTANCE = it }
             }
     }

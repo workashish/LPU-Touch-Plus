@@ -21,7 +21,7 @@ object LpuCrypto {
     private val gson = Gson()
 
     private fun key(): SecretKeySpec {
-        val raw = Base64.decode(KEY_B64, Base64.DEFAULT)
+        val raw = Base64.decode(KEY_B64, Base64.NO_WRAP)
         require(raw.size == 32) { "expected 32-byte AES key, got ${raw.size}" }
         return SecretKeySpec(raw, "AES")
     }

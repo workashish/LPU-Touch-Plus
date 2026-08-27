@@ -68,10 +68,21 @@ fun TimetableScreen(
     var refreshing by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     
-    // Default selected tab to today
+    // Default selected tab to today.
+    // Calendar: 1=Sunday, 2=Monday, ..., 7=Saturday
+    // We want:   0=Monday, 1=Tuesday, ..., 6=Sunday
     val initialDay = remember {
-        val d = Calendar.getInstance().get(Calendar.DAY_OF_WEEK)
-        if (d == Calendar.SUNDAY) 6 else d - 2 // 0-indexed for tabs, Calendar is 1-indexed starting Sunday
+        val calDay = Calendar.getInstance().get(Calendar.DAY_OF_WEEK)
+        when (calDay) {
+            Calendar.MONDAY -> 0
+            Calendar.TUESDAY -> 1
+            Calendar.WEDNESDAY -> 2
+            Calendar.THURSDAY -> 3
+            Calendar.FRIDAY -> 4
+            Calendar.SATURDAY -> 5
+            Calendar.SUNDAY -> 6
+            else -> 0
+        }
     }.coerceIn(0, 6)
     
     var selectedTabIndex by remember { mutableIntStateOf(initialDay) }

@@ -18,6 +18,14 @@ object ApiClient {
 
     private val gson: Gson = GsonBuilder().create()
 
+    /** Patterns that indicate the server session has expired. */
+    private val SESSION_EXPIRED_PATTERNS = listOf(
+        "your session has expired",
+        "session expired",
+        "unauthorized",
+        "token expired",
+    )
+
     fun baseHttpClient(sessionStore: SessionStore): OkHttpClient {
         val logging = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
@@ -34,15 +42,25 @@ object ApiClient {
                 if (!jwt.isNullOrEmpty()) {
                     builder.header("Authorization", "Bearer $jwt")
                 }
-                
+
                 val response = chain.proceed(builder.build())
-                val body = response.body
-                if (body != null) {
-                    val source = body.source()
-                    source.request(Long.MAX_VALUE)
-                    val buffer = source.buffer
-                    val responseString = buffer.clone().readString(Charsets.UTF_8)
-                    if (responseString.contains("Your session has expired", ignoreCase = true)) {
+
+                // Only check text-based responses (skip images, PDFs, binary)
+                val contentType = response.header("Content-Type") ?: ""
+                if (contentType.contains("json", ignoreCase = true) ||
+                    contentType.contains("text", ignoreCase = true)) {
+                    val body = response.body ?: return@addInterceptor response
+                    // Read only the first 4KB to detect session expiry without loading entire body
+                    val peekSource = body.source().peek()
+                    val peekBuffer = okio.Buffer()
+                    val bytesToRead = minOf(4096L, peekSource.buffer.size)
+                    peekSource.read(peekBuffer, bytesToRead)
+                    val preview = peekBuffer.readString(Charsets.UTF_8)
+
+                    val isExpired = SESSION_EXPIRED_PATTERNS.any { pattern ->
+                        preview.contains(pattern, ignoreCase = true)
+                    }
+                    if (isExpired) {
                         throw IOException("SESSION_EXPIRED")
                     }
                 }

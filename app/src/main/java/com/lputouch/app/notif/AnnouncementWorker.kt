@@ -31,18 +31,36 @@ class AnnouncementWorker(
         }
         if (announcements.isEmpty()) return Result.success()
 
-        // Only notify about announcements we haven't already told the user about.
-        val latest = announcements.first()
-        val latestId = latest.announcementId ?: ""
         val lastNotified = app.sessionStore.lastNotifiedAnnouncementId()
-        if (latestId.isNotBlank() && latestId == lastNotified) return Result.success()
 
-        postNotification(latest.subject ?: "New announcement", latest.uploadedBy ?: "")
-        if (latestId.isNotBlank()) app.sessionStore.saveLastNotifiedAnnouncementId(latestId)
+        // Find all announcements that are newer than the last notified one.
+        // We notify about each new one (up to a reasonable limit to avoid notification spam).
+        val newAnnouncements = announcements.filter { ann ->
+            val id = ann.announcementId ?: return@filter false
+            id.isNotBlank() && id != lastNotified
+        }.take(5) // Cap at 5 notifications per polling cycle
+
+        if (newAnnouncements.isEmpty()) return Result.success()
+
+        // Post a notification for each new announcement
+        newAnnouncements.forEachIndexed { index, ann ->
+            postNotification(
+                title = ann.subject ?: "New announcement",
+                text = ann.uploadedBy ?: "",
+                notificationId = 1000 + index // Unique ID per notification
+            )
+        }
+
+        // Update the last notified ID to the most recent one (first in list)
+        val mostRecentId = newAnnouncements.first().announcementId
+        if (!mostRecentId.isNullOrBlank()) {
+            app.sessionStore.saveLastNotifiedAnnouncementId(mostRecentId)
+        }
+
         return Result.success()
     }
 
-    private fun postNotification(title: String, text: String) {
+    private fun postNotification(title: String, text: String, notificationId: Int = 1) {
         val context = applicationContext
         val channelId = "announcements"
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -54,14 +72,16 @@ class AnnouncementWorker(
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) return
 
-        val intent = Intent(context, MainActivity::class.java)
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
         val pending = PendingIntent.getActivity(
-            context, 0, intent,
+            context, notificationId, intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
         val notification = NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(R.mipmap.ic_launcher)
+            .setSmallIcon(android.R.drawable.ic_dialog_info) // Use system icon as fallback
             .setContentTitle(title)
             .setContentText(text)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -69,6 +89,6 @@ class AnnouncementWorker(
             .setAutoCancel(true)
             .build()
 
-        NotificationManagerCompat.from(context).notify(1, notification)
+        NotificationManagerCompat.from(context).notify(notificationId, notification)
     }
 }

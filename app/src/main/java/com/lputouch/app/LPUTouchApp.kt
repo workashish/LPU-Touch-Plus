@@ -41,13 +41,17 @@ class LPUTouchApp : Application(), ImageLoaderFactory {
     }
 
     /**
-     * Never let an unexpected exception kill the app silently — show a toast
-     * and keep running. Network errors are already handled per-request;
-     * this is a safety net for anything we missed.
+     * Safety-net crash handler: show a user-friendly toast AND forward to the
+     * default handler so the system crash report (and any Crashlytics SDK) still
+     * records the event. Without this, fatal exceptions would be silently eaten.
      */
     private fun installCrashHandler() {
+        val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
-            throwable.printStackTrace()
+            // Log to logcat so `adb logcat` can still see it
+            android.util.Log.e("LPUTouchPlus", "Uncaught exception", throwable)
+
+            // Show a toast on the main thread so the user knows something happened
             Handler(Looper.getMainLooper()).post {
                 Toast.makeText(
                     this,
@@ -55,6 +59,9 @@ class LPUTouchApp : Application(), ImageLoaderFactory {
                     Toast.LENGTH_LONG,
                 ).show()
             }
+
+            // Delegate to the system default handler (generates crash report, kills process)
+            defaultHandler?.uncaughtException(thread, throwable)
         }
     }
 

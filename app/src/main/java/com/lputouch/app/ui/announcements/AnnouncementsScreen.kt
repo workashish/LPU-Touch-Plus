@@ -164,7 +164,7 @@ fun AnnouncementsScreen(
 
 @Composable
 private fun AnnouncementCard(a: Announcement, onClick: () -> Unit) {
-    val isNew = a.isNew.equals("true", ignoreCase = true)
+    val isNew = a.isNew == "1" || a.isNew.equals("true", ignoreCase = true)
     Card(
         modifier = Modifier
             .fillMaxWidth()
