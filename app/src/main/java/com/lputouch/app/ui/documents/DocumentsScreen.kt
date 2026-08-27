@@ -107,6 +107,9 @@ private fun DocumentCard(doc: AdmissionDocument, onClick: () -> Unit) {
         status.contains("reject", ignoreCase = true) -> Icons.Filled.Close
         else -> Icons.Filled.Info
     }
+    
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
@@ -118,12 +121,21 @@ private fun DocumentCard(doc: AdmissionDocument, onClick: () -> Unit) {
             Spacer(Modifier.width(16.dp))
             Column(Modifier.weight(1f)) {
                 Text(doc.documentDescription ?: "Document", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                Spacer(Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(statusIcon, contentDescription = null, tint = statusColor, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text(status, style = MaterialTheme.typography.labelSmall, color = statusColor)
+                }
             }
-            Spacer(Modifier.width(8.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(statusIcon, contentDescription = null, tint = statusColor, modifier = Modifier.size(16.dp))
-                Spacer(Modifier.width(4.dp))
-                Text(status, style = MaterialTheme.typography.labelSmall, color = statusColor)
+            if (!doc.fileBase64.isNullOrBlank()) {
+                IconButton(onClick = {
+                    scope.launch {
+                        saveDocument(context, doc)
+                    }
+                }) {
+                    Icon(Icons.Filled.Download, contentDescription = "Download Document", tint = MaterialTheme.colorScheme.primary)
+                }
             }
         }
     }
@@ -170,27 +182,49 @@ private fun DocumentViewerDialog(doc: AdmissionDocument, onDismiss: () -> Unit) 
 
                 val base64 = doc.fileBase64
                 if (base64 != null && base64.isNotBlank()) {
-                    val bitmap = remember(base64) {
-                        try {
-                            val clean = base64.substringAfter("base64,")
-                            val bytes = Base64.decode(clean, Base64.DEFAULT)
-                            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-                        } catch (e: Exception) { null }
-                    }
-                    if (bitmap != null) {
-                        Box(
-                            modifier = Modifier.fillMaxSize().padding(8.dp),
-                            contentAlignment = Alignment.Center,
+                    val isPdf = base64.contains("application/pdf", ignoreCase = true)
+                    
+                    if (isPdf) {
+                        Column(
+                            modifier = Modifier.fillMaxSize().padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
                         ) {
-                            Image(
-                                bitmap = bitmap.asImageBitmap(),
-                                contentDescription = doc.documentDescription,
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Fit,
-                            )
+                            Icon(Icons.Filled.Folder, contentDescription = null, modifier = Modifier.size(72.dp), tint = MaterialTheme.colorScheme.primary)
+                            Spacer(Modifier.height(16.dp))
+                            Text("PDF Document", style = MaterialTheme.typography.titleLarge)
+                            Spacer(Modifier.height(8.dp))
+                            Text("This document is a PDF. Please download it to view it.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Spacer(Modifier.height(24.dp))
+                            Button(onClick = { scope.launch { saveDocument(context, doc) } }) {
+                                Icon(Icons.Filled.Download, contentDescription = null)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Download PDF")
+                            }
                         }
                     } else {
-                        EmptyState("Unable to display document")
+                        val bitmap = remember(base64) {
+                            try {
+                                val clean = base64.substringAfter("base64,")
+                                val bytes = Base64.decode(clean, Base64.DEFAULT)
+                                BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                            } catch (e: Exception) { null }
+                        }
+                        if (bitmap != null) {
+                            Box(
+                                modifier = Modifier.fillMaxSize().padding(8.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Image(
+                                    bitmap = bitmap.asImageBitmap(),
+                                    contentDescription = doc.documentDescription,
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Fit,
+                                )
+                            }
+                        } else {
+                            EmptyState("Unable to display document. Try downloading it.")
+                        }
                     }
                 } else {
                     EmptyState("No document preview available")
@@ -203,9 +237,23 @@ private fun DocumentViewerDialog(doc: AdmissionDocument, onDismiss: () -> Unit) 
 private fun saveDocument(context: Context, doc: AdmissionDocument) {
     try {
         val base64 = doc.fileBase64 ?: return
+        
+        // Extract mime type and construct extension
+        var mimeType = "image/png"
+        var ext = "png"
+        if (base64.startsWith("data:")) {
+            val typePart = base64.substringAfter("data:").substringBefore(";")
+            if (typePart.isNotBlank()) {
+                mimeType = typePart
+                ext = typePart.substringAfterLast("/")
+                if (ext == "jpeg") ext = "jpg"
+            }
+        }
+        
         val clean = base64.substringAfter("base64,")
         val bytes = Base64.decode(clean, Base64.DEFAULT)
-        val fileName = "${doc.documentDescription?.replace(" ", "_") ?: "document"}_${System.currentTimeMillis()}.png"
+        val safeName = doc.documentDescription?.replace(Regex("[^a-zA-Z0-9.-]"), "_") ?: "document"
+        val fileName = "${safeName}_${System.currentTimeMillis()}.$ext"
 
         var outputStream: OutputStream? = null
 
@@ -213,7 +261,7 @@ private fun saveDocument(context: Context, doc: AdmissionDocument) {
             val resolver = context.contentResolver
             val contentValues = ContentValues().apply {
                 put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-                put(MediaStore.MediaColumns.MIME_TYPE, "image/png")
+                put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
                 put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
             }
             val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
@@ -227,7 +275,7 @@ private fun saveDocument(context: Context, doc: AdmissionDocument) {
         }
 
         outputStream?.use { it.write(bytes) }
-        Toast.makeText(context, "Document saved to Downloads", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, "Saved $fileName to Downloads", Toast.LENGTH_LONG).show()
     } catch (e: Exception) {
         e.printStackTrace()
         Toast.makeText(context, "Failed to save document", Toast.LENGTH_SHORT).show()
