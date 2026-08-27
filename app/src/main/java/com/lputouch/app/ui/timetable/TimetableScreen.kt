@@ -185,6 +185,21 @@ fun TimetableScreen(
 
 @Composable
 private fun TimetableCard(t: TimetableItem) {
+    val desc = t.description ?: ""
+    val isAvailableShortly = desc.contains("available Shortly", ignoreCase = true)
+    
+    val courseCodeMatch = Regex("C:([^ /\\r\\n]+)").find(desc)?.groupValues?.get(1)
+    val roomMatch = Regex("R:\\s*([^ /\\r\\n]+)").find(desc)?.groupValues?.get(1)
+    val sectionMatch = Regex("S:([^ /\\r\\n]+)").find(desc)?.groupValues?.get(1)
+    
+    val parts = desc.split("/")
+    val type = parts.firstOrNull()?.trim()?.takeIf { it.isNotBlank() } ?: "Course"
+
+    val displayTitle = t.courseName ?: t.subjectName ?: t.courseCode ?: courseCodeMatch ?: if (isAvailableShortly) "Notice" else type
+    val displaySubtitle = if (isAvailableShortly) desc else (type + (sectionMatch?.let { " • Sec $it" } ?: ""))
+    val displayRoom = t.roomNo ?: roomMatch
+    val displayFaculty = t.facultyName
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
@@ -192,62 +207,76 @@ private fun TimetableCard(t: TimetableItem) {
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.width(100.dp)) {
-                Box(
-                    modifier = Modifier
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
-                        .padding(horizontal = 10.dp, vertical = 6.dp)
-                ) {
-                    Text(
-                        text = t.attendanceTime ?: "—",
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold
-                    )
+            if (!t.attendanceTime.isNullOrBlank()) {
+                Column(Modifier.width(100.dp)) {
+                    Box(
+                        modifier = Modifier
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = t.attendanceTime,
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
+                Spacer(Modifier.width(8.dp))
             }
-            Spacer(Modifier.width(8.dp))
             Column(Modifier.weight(1f)) {
                 Text(
-                    text = t.courseName ?: t.subjectName ?: t.courseCode ?: "Course",
+                    text = displayTitle,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Spacer(Modifier.height(8.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    t.facultyName?.takeIf { it.isNotBlank() }?.let {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                Icons.Filled.Person,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                            )
-                            Spacer(Modifier.width(4.dp))
-                            Text(
-                                text = it, 
-                                style = MaterialTheme.typography.bodySmall, 
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                            )
+                if (displaySubtitle.isNotBlank()) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = displaySubtitle,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                    )
+                }
+                if (!displayRoom.isNullOrBlank() || !displayFaculty.isNullOrBlank()) {
+                    Spacer(Modifier.height(8.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        displayFaculty?.takeIf { it.isNotBlank() }?.let {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    Icons.Filled.Person,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    text = it, 
+                                    style = MaterialTheme.typography.bodySmall, 
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                )
+                            }
                         }
-                    }
-                    Spacer(Modifier.width(12.dp))
-                    t.roomNo?.takeIf { it.isNotBlank() }?.let {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                Icons.Filled.Place,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
-                            Spacer(Modifier.width(4.dp))
-                            Text(
-                                text = it, 
-                                style = MaterialTheme.typography.bodySmall, 
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
+                        if (!displayFaculty.isNullOrBlank() && !displayRoom.isNullOrBlank()) {
+                            Spacer(Modifier.width(12.dp))
+                        }
+                        displayRoom?.takeIf { it.isNotBlank() }?.let {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    Icons.Filled.Place,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    text = it, 
+                                    style = MaterialTheme.typography.bodySmall, 
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
                         }
                     }
                 }
