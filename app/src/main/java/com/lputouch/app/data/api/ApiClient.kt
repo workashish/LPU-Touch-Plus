@@ -19,7 +19,7 @@ object ApiClient {
 
     private fun baseHttpClient(sessionStore: SessionStore): OkHttpClient {
         val logging = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BASIC
+            level = HttpLoggingInterceptor.Level.BODY
         }
         return OkHttpClient.Builder()
             .connectTimeout(20, TimeUnit.SECONDS)

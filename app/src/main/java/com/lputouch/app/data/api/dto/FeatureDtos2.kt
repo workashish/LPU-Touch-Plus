@@ -164,13 +164,13 @@ data class NewsMedia(
 /* --------------------- Attendance Detail ----------------------------------- */
 
 data class AttendanceDetailItem(
-    @SerializedName("Date") val date: String? = null,
+    @SerializedName("AttendanceDate") val date: String? = null,
     @SerializedName("Day") val day: String? = null,
-    @SerializedName("Time") val time: String? = null,
-    @SerializedName("Status") val status: String? = null,
-    @SerializedName("CourseCode") val courseCode: String? = null,
+    @SerializedName("AttendanceTime") val time: String? = null,
+    @SerializedName("AttendanceCode") val status: String? = null,
+    @SerializedName("Coursecode") val courseCode: String? = null,
     @SerializedName("CourseName") val courseName: String? = null,
-    @SerializedName("FacultyName") val facultyName: String? = null,
+    @SerializedName("Name") val facultyName: String? = null,
     @SerializedName("Error") val error: String? = null,
 )
 
