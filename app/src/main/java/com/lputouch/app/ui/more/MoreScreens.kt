@@ -24,6 +24,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.lputouch.app.data.api.dto.AptitudeScore
 import com.lputouch.app.data.api.dto.MakeupClass
@@ -321,10 +322,37 @@ fun MakeupScreen(
             shape = RoundedCornerShape(16.dp),
         ) {
             Column(Modifier.padding(16.dp)) {
-                Text(m.subjectName ?: m.courseName ?: "", style = MaterialTheme.typography.titleSmall)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        m.subjectName ?: m.courseName ?: "",
+                        style = MaterialTheme.typography.titleSmall,
+                        modifier = Modifier.weight(1f),
+                    )
+                    m.type?.takeIf { it.isNotBlank() }?.let { t ->
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (t.contains("makeup", true) || t.contains("Makeup", true))
+                                    MaterialTheme.colorScheme.primaryContainer
+                                else MaterialTheme.colorScheme.tertiaryContainer
+                            ),
+                            shape = RoundedCornerShape(8.dp),
+                        ) {
+                            Text(
+                                t,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+                    }
+                }
                 m.description?.takeIf { it.isNotBlank() }?.let {
                     Spacer(Modifier.height(4.dp))
                     Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                m.day?.takeIf { it.isNotBlank() }?.let {
+                    Spacer(Modifier.height(4.dp))
+                    Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                 }
                 listOf(
                     "Date" to m.attendanceDate,

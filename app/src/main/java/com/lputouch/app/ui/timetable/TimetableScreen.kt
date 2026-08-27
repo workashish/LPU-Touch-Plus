@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -272,16 +273,21 @@ private fun TimetableCard(t: TimetableItem) {
             }
         }
     } else {
-        // Normal Class Card Design
+        // Normal Class Card — clean vertical layout, works on all screen sizes
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
             shape = RoundedCornerShape(16.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
-            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                if (!t.attendanceTime.isNullOrBlank()) {
-                    Column(Modifier.width(100.dp)) {
+            Column(Modifier.padding(16.dp)) {
+                // Row 1: Time badge + Course title
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    // Time badge
+                    if (!t.attendanceTime.isNullOrBlank()) {
                         Box(
                             modifier = Modifier
                                 .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
@@ -291,63 +297,82 @@ private fun TimetableCard(t: TimetableItem) {
                                 text = t.attendanceTime,
                                 style = MaterialTheme.typography.titleSmall,
                                 color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
                             )
                         }
+                        Spacer(Modifier.width(12.dp))
                     }
-                    Spacer(Modifier.width(8.dp))
-                }
-                Column(Modifier.weight(1f)) {
+                    // Course name — takes remaining width
                     Text(
                         text = displayTitle,
                         style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                if (displaySubtitle.isNotBlank()) {
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = displaySubtitle,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f),
+                        maxLines = 2,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                     )
                 }
-                if (!displayRoom.isNullOrBlank() || !displayFaculty.isNullOrBlank()) {
+
+                // Row 2: Section tag + Course code (if available)
+                val codeOrSection = listOfNotNull(
+                    courseCodeMatchFinal?.takeIf { it.isNotBlank() },
+                    sectionMatch?.let { "Sec $it" },
+                ).joinToString("  •  ")
+                if (codeOrSection.isNotBlank()) {
                     Spacer(Modifier.height(8.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        displayFaculty?.takeIf { it.isNotBlank() }?.let {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    Icons.Filled.Person,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                )
-                                Spacer(Modifier.width(4.dp))
-                                Text(
-                                    text = it, 
-                                    style = MaterialTheme.typography.bodySmall, 
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                                )
-                            }
-                        }
-                        if (!displayFaculty.isNullOrBlank() && !displayRoom.isNullOrBlank()) {
-                            Spacer(Modifier.width(12.dp))
-                        }
+                    Text(
+                        text = codeOrSection,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
+                // Row 3: Room + Faculty (chip-style tags)
+                val hasRoom = !displayRoom.isNullOrBlank()
+                val hasFaculty = !displayFaculty.isNullOrBlank()
+                if (hasRoom || hasFaculty) {
+                    Spacer(Modifier.height(10.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
                         displayRoom?.takeIf { it.isNotBlank() }?.let {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
                                     Icons.Filled.Place,
                                     contentDescription = null,
-                                    modifier = Modifier.size(16.dp),
+                                    modifier = Modifier.size(14.dp),
                                     tint = MaterialTheme.colorScheme.primary,
                                 )
                                 Spacer(Modifier.width(4.dp))
                                 Text(
-                                    text = it, 
-                                    style = MaterialTheme.typography.bodySmall, 
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
+                                    text = it,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        }
+                        displayFaculty?.takeIf { it.isNotBlank() }?.let {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f, fill = false),
+                            ) {
+                                Icon(
+                                    Icons.Filled.Person,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(14.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    text = it,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                    maxLines = 1,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                                 )
                             }
                         }
@@ -356,5 +381,4 @@ private fun TimetableCard(t: TimetableItem) {
             }
         }
     }
-}
 }
