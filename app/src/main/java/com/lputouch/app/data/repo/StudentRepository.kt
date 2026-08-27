@@ -43,8 +43,11 @@ import kotlinx.coroutines.flow.first
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import android.content.Context
+import com.lputouch.app.widget.TimetableWidgetReceiver
 
 class StudentRepository(
+    private val context: Context,
     private val mobileApi: MobileApi,
     private val umsApi: UmsApi,
     private val happeningsApi: HappeningsApi,
@@ -245,6 +248,7 @@ class StudentRepository(
                         )
                     }
                 )
+                TimetableWidgetReceiver.update(context)
             }
         }
         return db.timetableDao().getAll().map {
