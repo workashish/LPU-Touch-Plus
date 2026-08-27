@@ -110,22 +110,7 @@ class TimetableWidget : GlanceAppWidget() {
                     androidx.glance.appwidget.lazy.LazyColumn(
                         modifier = GlanceModifier.fillMaxSize()
                     ) {
-                        item {
-                            // Header
-                            Row(
-                                modifier = GlanceModifier.fillMaxWidth().padding(bottom = 12.dp, top = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "📅 Today's Classes",
-                                    style = TextStyle(
-                                        color = GlanceTheme.colors.onSurface,
-                                        fontSize = 18.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                )
-                            }
-                        }
+
                         
                         classes.forEach { t ->
                             item {

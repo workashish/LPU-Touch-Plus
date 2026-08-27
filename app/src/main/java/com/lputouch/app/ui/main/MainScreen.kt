@@ -99,7 +99,7 @@ fun MainScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 16.dp)
+                        .padding(start = 24.dp, end = 24.dp, bottom = 16.dp, top = 8.dp)
                         .shadow(16.dp, RoundedCornerShape(32.dp))
                         .clip(RoundedCornerShape(32.dp))
                 ) {
