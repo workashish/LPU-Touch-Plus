@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.lputouch.app.data.api.dto.StudentBasicInfo
+import com.lputouch.app.data.api.dto.TeacherOnLeaveDto
 import com.lputouch.app.data.api.dto.TimetableItem
 import com.lputouch.app.data.prefs.SessionStore
 import com.lputouch.app.data.repo.StudentRepository
@@ -93,6 +94,7 @@ fun HomeScreen(
     var profile by remember { mutableStateOf<StudentBasicInfo?>(null) }
     var studentName by remember { mutableStateOf("Student") }
     var todayClasses by remember { mutableStateOf<List<TimetableItem>>(emptyList()) }
+    var teachersOnLeave by remember { mutableStateOf<List<TeacherOnLeaveDto>>(emptyList()) }
     var isLoadingClasses by remember { mutableStateOf(true) }
     val isOnline = rememberNetworkAvailability()
 
@@ -133,6 +135,15 @@ fun HomeScreen(
                 // Ignore failure for dashboard widget
             } finally {
                 isLoadingClasses = false
+            }
+        }
+
+        launch {
+            try {
+                val leaves = studentRepository.getTeachersOnLeave() ?: emptyList()
+                teachersOnLeave = leaves.filter { it.error.isNullOrBlank() }
+            } catch (e: Exception) {
+                // Ignore failure for dashboard widget
             }
         }
     }
@@ -213,6 +224,28 @@ fun HomeScreen(
                     ) {
                         items(todayClasses) { t ->
                             ClassWidgetCard(t)
+                        }
+                    }
+                }
+            }
+
+            if (teachersOnLeave.isNotEmpty()) {
+                item {
+                    Spacer(Modifier.height(24.dp))
+                    Text(
+                        text = "Teachers on Leave",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(horizontal = 20.dp)
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 20.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(teachersOnLeave) { teacher ->
+                            TeacherOnLeaveCard(teacher)
                         }
                     }
                 }
@@ -367,21 +400,71 @@ private fun FeeAlertBanner(message: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun BirthdayBanner(name: String) {
+fun BirthdayBanner(name: String) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFFCE4EC)),
-        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0)),
+        shape = RoundedCornerShape(16.dp)
     ) {
-        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(imageVector = androidx.compose.material.icons.Icons.Filled.Cake, contentDescription = "Birthday", tint = Color(0xFFC2185B))
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Filled.Cake, contentDescription = "Birthday", tint = Color(0xFFE65100))
             Spacer(Modifier.width(12.dp))
-            Column {
-                Text("Happy Birthday!", fontWeight = FontWeight.Bold, color = Color(0xFFC2185B))
-                Text("Have a wonderful day, ${name.substringBefore(" ")}!", style = MaterialTheme.typography.bodySmall, color = Color(0xFFAD1457))
+            Text(
+                "Happy Birthday, $name! \uD83C\uDF89",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFFE65100)
+            )
+        }
+    }
+}
+
+@Composable
+fun TeacherOnLeaveCard(teacher: TeacherOnLeaveDto) {
+    Card(
+        modifier = Modifier.width(260.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Filled.PersonOff,
+                    contentDescription = "Leave",
+                    tint = MaterialTheme.colorScheme.onErrorContainer,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = teacher.teacherName ?: "Unknown Faculty",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = "${teacher.courseCode} • ${teacher.section}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onErrorContainer,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = teacher.daySpan ?: "Leave",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }

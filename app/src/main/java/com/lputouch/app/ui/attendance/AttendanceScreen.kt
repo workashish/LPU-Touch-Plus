@@ -43,11 +43,15 @@ fun AttendanceScreen(
 
     suspend fun load(force: Boolean = false) {
         error = null
-        if (!isOnline) { error = "No internet connection"; return }
         try {
-            items = studentRepository.getAttendance(forceRefresh = force)
+            // Always load from cache first (works offline too).
+            // forceRefresh=true will attempt network even if cache is fresh.
+            val data = studentRepository.getAttendance(forceRefresh = if (!isOnline) false else force)
+            items = data
+            // Only show offline warning if we have no data at all
+            if (data.isEmpty() && !isOnline) error = "No internet connection"
         } catch (e: Exception) {
-            error = e.message ?: "Failed to load"
+            error = if (!isOnline) "No internet connection" else (e.message ?: "Failed to load")
         }
     }
 

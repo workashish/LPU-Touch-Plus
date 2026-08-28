@@ -76,11 +76,12 @@ fun MarksScreen(
 
     suspend fun load(force: Boolean = false) {
         error = null
-        if (!isOnline) { error = "No internet connection"; return }
         try {
-            results = studentRepository.getResults(forceRefresh = force)
+            val data = studentRepository.getResults(forceRefresh = if (!isOnline) false else force)
+            results = data
+            if (data.isEmpty() && !isOnline) error = "No internet connection"
         } catch (e: Exception) {
-            error = e.message ?: "Failed to load"
+            error = if (!isOnline) "No internet connection" else (e.message ?: "Failed to load")
         }
     }
 

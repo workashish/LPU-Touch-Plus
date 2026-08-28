@@ -29,6 +29,7 @@ import com.lputouch.app.data.api.dto.PvrResponse
 import com.lputouch.app.data.api.dto.RmsQuery
 import com.lputouch.app.data.api.dto.SeatingPlanItem
 import com.lputouch.app.data.api.dto.StudentBasicInfo
+import com.lputouch.app.data.api.dto.TeacherOnLeaveDto
 import com.lputouch.app.data.api.dto.TimetableItem
 import com.lputouch.app.data.api.dto.UpdateRequest
 import retrofit2.http.Body
@@ -173,4 +174,49 @@ interface UmsApi {
         @Query("uid") userId: String,
         @Query("token") accessToken: String,
     ): List<LeaderboardEntry>
+
+    @GET("umswebservice/umswebservice.svc/TeachersOnLeaveForService/{userId}/{accessToken}/{deviceId}")
+    suspend fun getTeachersOnLeave(
+        @Path("userId") userId: String,
+        @Path("accessToken") accessToken: String,
+        @Path("deviceId") deviceId: String,
+    ): List<TeacherOnLeaveDto>
+
+    @GET("umswebservice/umswebservice.svc/GetFeeBalance/{userId}/{accessToken}/{deviceId}")
+    suspend fun getFeeBalance(
+        @Path("userId") userId: String,
+        @Path("accessToken") accessToken: String,
+        @Path("deviceId") deviceId: String,
+    ): List<FeeBalanceItem>
+
+    @GET("umswebservice/umswebservice.svc/Student/SeatingPlan")
+    suspend fun getSeatingPlan(
+        @Query("uid") userId: String,
+        @Query("token") accessToken: String,
+        @Query("deviceId") deviceId: String,
+    ): List<SeatingPlanItem>
+
+    @GET("umswebservice/umswebservice.svc/Student/GetLibraryData")
+    suspend fun getLibraryData(
+        @Query("uid") userId: String,
+        @Query("token") accessToken: String,
+    ): List<LibraryItem>
+
+    @GET("umswebservice/umswebservice.svc/Student/GetBusRoutes")
+    suspend fun getBusRoutes(
+        @Query("uid") userId: String,
+        @Query("token") accessToken: String,
+    ): List<BusRoute>
+
+    @GET("umswebservice/umswebservice.svc/Parent/GetHostelLeaveDetails")
+    suspend fun getHostelLeaveHistory(
+        @Query("uid") userId: String,
+        @Query("token") accessToken: String,
+    ): List<HostelLeaveItem>
+
+    @GET("umswebservice/umswebservice.svc/Parent/HostelLeaveBalance")
+    suspend fun getHostelLeaveBalance(
+        @Query("uid") userId: String,
+        @Query("token") accessToken: String,
+    ): List<HostelLeaveBalance>
 }

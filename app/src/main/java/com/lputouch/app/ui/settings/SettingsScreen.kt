@@ -38,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.lputouch.app.data.prefs.SessionStore
+import com.lputouch.app.BuildConfig
 import com.lputouch.app.security.PinHelper
 import kotlinx.coroutines.launch
 
@@ -138,7 +139,7 @@ fun SettingsScreen(
                     Text("About", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "LPU Touch Plus v1.0.0 — an unofficial student app for Lovely Professional University. " +
+                        "LPU Touch Plus v${BuildConfig.VERSION_NAME} — an unofficial student app for Lovely Professional University. " +
                                 "Not affiliated with LPU. Use only your own credentials.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,

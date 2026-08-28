@@ -93,11 +93,12 @@ fun TimetableScreen(
 
     suspend fun load(force: Boolean = false) {
         error = null
-        if (!isOnline) { error = "No internet connection"; return }
         try {
-            items = studentRepository.getTimetable(forceRefresh = force)
+            val data = studentRepository.getTimetable(forceRefresh = if (!isOnline) false else force)
+            items = data
+            if (data.isEmpty() && !isOnline) error = "No internet connection"
         } catch (e: Exception) {
-            error = e.message ?: "Failed to load"
+            error = if (!isOnline) "No internet connection" else (e.message ?: "Failed to load")
         }
     }
 

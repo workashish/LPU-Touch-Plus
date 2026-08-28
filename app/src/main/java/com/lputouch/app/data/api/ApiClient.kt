@@ -2,6 +2,7 @@ package com.lputouch.app.data.api
 
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import com.lputouch.app.BuildConfig
 import com.lputouch.app.data.prefs.SessionStore
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -20,7 +21,10 @@ object ApiClient {
 
     fun baseHttpClient(sessionStore: SessionStore): OkHttpClient {
         val logging = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
+            // Only log request/response bodies in debug builds.
+            // Never log in release — bodies contain passwords and tokens.
+            level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY
+                    else HttpLoggingInterceptor.Level.NONE
         }
         return OkHttpClient.Builder()
             .connectTimeout(20, TimeUnit.SECONDS)

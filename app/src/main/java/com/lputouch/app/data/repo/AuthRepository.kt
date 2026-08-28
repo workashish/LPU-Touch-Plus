@@ -8,6 +8,7 @@ import com.lputouch.app.data.api.UmsApi
 import com.lputouch.app.data.api.dto.CreateTokenRequest
 import com.lputouch.app.data.api.dto.MenuItem
 import com.lputouch.app.data.api.dto.UpdateRequest
+import com.lputouch.app.data.db.AppDatabase
 import com.lputouch.app.data.prefs.SessionStore
 import java.util.UUID
 import kotlinx.coroutines.flow.first
@@ -16,6 +17,7 @@ class AuthRepository(
     private val mobileApi: MobileApi,
     private val umsApi: UmsApi,
     private val sessionStore: SessionStore,
+    private val db: AppDatabase,
 ) {
     private val gson = Gson()
 
@@ -136,7 +138,15 @@ class AuthRepository(
         }
     }
 
-    suspend fun logout() = sessionStore.logout()
+    /**
+     * Clears ALL user-specific cached data (Room DB) then clears the session.
+     * This guarantees that when a different user logs in, they never see
+     * attendance, results, or timetable data belonging to the previous account.
+     */
+    suspend fun logout() {
+        try { db.clearAllTables() } catch (_: Exception) {}
+        sessionStore.logout()
+    }
 }
 
 sealed class LoginResult {

@@ -32,14 +32,18 @@ import com.lputouch.app.data.api.dto.RmsQuery
 import com.lputouch.app.data.api.dto.RplResult
 import com.lputouch.app.data.api.dto.SeatingPlanItem
 import com.lputouch.app.data.api.dto.StudentBasicInfo
+import com.lputouch.app.data.api.dto.TeacherOnLeaveDto
 import com.lputouch.app.data.api.dto.TimetableItem
 import com.lputouch.app.data.db.AppDatabase
 import com.lputouch.app.data.db.CachedAnnouncementEntity
 import com.lputouch.app.data.db.CachedAttendanceEntity
 import com.lputouch.app.data.db.CachedResultEntity
 import com.lputouch.app.data.db.CachedTimetableEntity
+import com.lputouch.app.data.db.CacheTtl
 import com.lputouch.app.data.prefs.SessionStore
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -55,6 +59,20 @@ class StudentRepository(
     private val db: AppDatabase,
     private val authRepository: AuthRepository,
 ) {
+    private val resultsMutex = Mutex()
+    private val attendanceMutex = Mutex()
+    private val timetableMutex = Mutex()
+    private val announcementsMutex = Mutex()
+    
+    private var cachedTeachersOnLeave: List<TeacherOnLeaveDto>? = null
+    private var teachersOnLeaveFetchTime = 0L
+
+    private var cachedProfile: List<ProfileSection>? = null
+    private var profileFetchTime = 0L
+
+    private var cachedBasicInfo: StudentBasicInfo? = null
+    private var basicInfoFetchTime = 0L
+
     private suspend fun session() = Triple(
         sessionStore.userId.first() ?: "",
         sessionStore.accessToken.first() ?: "",
@@ -154,10 +172,29 @@ class StudentRepository(
     private fun <T> filterExpired(items: List<T>): List<T> =
         items.filterNot { hasErrorField(extractError(it)) }
 
+    /**
+     * Returns true if the cache is empty OR older than [ttlMs] milliseconds.
+     * Used to decide whether to hit the network or serve from local cache.
+     */
+    private suspend fun isCacheStale(oldestCachedAt: Long?, ttlMs: Long): Boolean {
+        if (oldestCachedAt == null) return true  // empty table
+        return (System.currentTimeMillis() - oldestCachedAt) > ttlMs
+    }
+
     suspend fun getProfile(): List<ProfileSection> {
+        val now = System.currentTimeMillis()
+        if (cachedProfile != null && now - profileFetchTime < 15 * 60 * 1000L) {
+            return cachedProfile!!
+        }
         return withFreshSession { uid, token, deviceId ->
             umsApi.getProfile(token, deviceId, uid)
                 .filterNot { hasErrorField(it.error) }
+                .also {
+                    if (it.isNotEmpty()) {
+                        cachedProfile = it
+                        profileFetchTime = now
+                    }
+                }
         } ?: emptyList()
     }
 
@@ -167,19 +204,31 @@ class StudentRepository(
         } catch (e: Exception) {
             e.printStackTrace()
         }
+        cachedProfile = null
+        cachedBasicInfo = null
+        cachedTeachersOnLeave = null
     }
 
     suspend fun getStudentBasicInfo(): StudentBasicInfo? {
+        val now = System.currentTimeMillis()
+        if (cachedBasicInfo != null && now - basicInfoFetchTime < 15 * 60 * 1000L) {
+            return cachedBasicInfo
+        }
         return withFreshSession { uid, token, deviceId ->
             umsApi.studentBasicInfo(uid, token, deviceId)
                 .filterNot { hasErrorField(it.error) }
                 .firstOrNull()
+                ?.also {
+                    cachedBasicInfo = it
+                    basicInfoFetchTime = now
+                }
         }
     }
 
-    suspend fun getResults(forceRefresh: Boolean = false): List<ResultItem> {
-        if (forceRefresh || db.resultDao().getAll().isEmpty()) {
-            try {
+    suspend fun getResults(forceRefresh: Boolean = false): List<ResultItem> = resultsMutex.withLock {
+        val stale = isCacheStale(db.resultDao().oldestCachedAt(), CacheTtl.RESULTS)
+        if (forceRefresh || stale) {
+            withFreshSession { _, _, _ ->
                 val response = mobileApi.getStudentResult()
                 val flat = response.flatMap { it.result ?: emptyList() }
                 if (flat.isNotEmpty()) {
@@ -204,8 +253,7 @@ class StudentRepository(
                         }
                     )
                 }
-            } catch (e: Exception) {
-                // fall through to cache
+                Unit // Return something non-null so withFreshSession considers it a success
             }
         }
         return db.resultDao().getAll().map {
@@ -226,8 +274,9 @@ class StudentRepository(
         }
     }
 
-    suspend fun getAttendance(forceRefresh: Boolean = false): List<AttendanceItem> {
-        if (forceRefresh || db.attendanceDao().getAll().isEmpty()) {
+    suspend fun getAttendance(forceRefresh: Boolean = false): List<AttendanceItem> = attendanceMutex.withLock {
+        val stale = isCacheStale(db.attendanceDao().oldestCachedAt(), CacheTtl.ATTENDANCE)
+        if (forceRefresh || stale) {
             val items = withFreshSession { uid, token, deviceId ->
                 filterExpired(umsApi.getAttendance(uid, token, deviceId)).takeIf { it.isNotEmpty() }
             }
@@ -271,8 +320,9 @@ class StudentRepository(
         } ?: emptyList()
     }
 
-    suspend fun getTimetable(forceRefresh: Boolean = false): List<TimetableItem> {
-        if (forceRefresh || db.timetableDao().getAll().isEmpty()) {
+    suspend fun getTimetable(forceRefresh: Boolean = false): List<TimetableItem> = timetableMutex.withLock {
+        val stale = isCacheStale(db.timetableDao().oldestCachedAt(), CacheTtl.TIMETABLE)
+        if (forceRefresh || stale) {
             val items = withFreshSession { uid, token, deviceId ->
                 filterExpired(umsApi.getTimetable(uid, token, deviceId)).takeIf { it.isNotEmpty() }
             }
@@ -380,8 +430,9 @@ class StudentRepository(
         }
     }
 
-    suspend fun getAnnouncements(forceRefresh: Boolean = false): List<Announcement> {
-        if (forceRefresh || db.announcementDao().getAll().isEmpty()) {
+    suspend fun getAnnouncements(forceRefresh: Boolean = false): List<Announcement> = announcementsMutex.withLock {
+        val stale = isCacheStale(db.announcementDao().oldestCachedAt(), CacheTtl.ANNOUNCEMENTS)
+        if (forceRefresh || stale) {
             val items = withFreshSession { uid, token, deviceId ->
                 filterExpired(umsApi.getAnnouncements(uid, token, deviceId)).takeIf { it.isNotEmpty() }
             }
@@ -470,7 +521,11 @@ class StudentRepository(
     }
 
     suspend fun getFeeBalance(): List<FeeBalanceItem> {
-        return emptyList()
+        return withFreshSession { uid, token, deviceId ->
+            umsApi.getFeeBalance(uid, token, deviceId)
+                .filter { it.error.isNullOrBlank() }
+                .takeIf { it.isNotEmpty() }
+        } ?: emptyList()
     }
 
     suspend fun getFeeExtensionPopup(): List<FeeExtensionItem> {
@@ -478,23 +533,43 @@ class StudentRepository(
     }
 
     suspend fun getSeatingPlan(): List<SeatingPlanItem> {
-        return emptyList()
+        return withFreshSession { uid, token, deviceId ->
+            umsApi.getSeatingPlan(uid, token, deviceId)
+                .filter { it.error.isNullOrBlank() }
+                .takeIf { it.isNotEmpty() }
+        } ?: emptyList()
     }
 
     suspend fun getLibraryData(): List<LibraryItem> {
-        return emptyList()
+        return withFreshSession { uid, token, _ ->
+            umsApi.getLibraryData(uid, token)
+                .filter { it.error.isNullOrBlank() }
+                .takeIf { it.isNotEmpty() }
+        } ?: emptyList()
     }
 
     suspend fun getBusRoutes(): List<BusRoute> {
-        return emptyList()
+        return withFreshSession { uid, token, _ ->
+            umsApi.getBusRoutes(uid, token)
+                .filter { it.error.isNullOrBlank() }
+                .takeIf { it.isNotEmpty() }
+        } ?: emptyList()
     }
 
     suspend fun getHostelLeaveHistory(): List<HostelLeaveItem> {
-        return emptyList()
+        return withFreshSession { uid, token, _ ->
+            umsApi.getHostelLeaveHistory(uid, token)
+                .filter { it.error.isNullOrBlank() }
+                .takeIf { it.isNotEmpty() }
+        } ?: emptyList()
     }
 
     suspend fun getHostelLeaveBalance(): HostelLeaveBalance? {
-        return null
+        return withFreshSession { uid, token, _ ->
+            umsApi.getHostelLeaveBalance(uid, token)
+                .filter { it.error.isNullOrBlank() }
+                .firstOrNull()
+        }
     }
 
     suspend fun getPhoneDirectory(): List<PhoneContact> {
@@ -534,6 +609,19 @@ class StudentRepository(
     }
 
     // ───────────────────────────────────────────────────────────────────────────
+
+    suspend fun getTeachersOnLeave(): List<TeacherOnLeaveDto>? {
+        val now = System.currentTimeMillis()
+        if (cachedTeachersOnLeave != null && now - teachersOnLeaveFetchTime < 5 * 60 * 1000L) {
+            return cachedTeachersOnLeave
+        }
+        return withFreshSession { uid, token, deviceId ->
+            umsApi.getTeachersOnLeave(uid, token, deviceId)?.also {
+                cachedTeachersOnLeave = it
+                teachersOnLeaveFetchTime = now
+            }
+        }
+    }
 
     private suspend fun <T> safeList(block: suspend () -> List<T>): List<T> =
         try { block() } catch (e: Exception) { emptyList() }

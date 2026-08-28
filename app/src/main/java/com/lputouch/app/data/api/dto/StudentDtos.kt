@@ -143,3 +143,11 @@ data class Announcement(
     @SerializedName("Type") val type: String? = null,
     @SerializedName("UploadedBy") val uploadedBy: String? = null,
 )
+
+data class TeacherOnLeaveDto(
+    @SerializedName("CourseCode") val courseCode: String? = null,
+    @SerializedName("DaySpan") val daySpan: String? = null,
+    @SerializedName("Section") val section: String? = null,
+    @SerializedName("TeacherName") val teacherName: String? = null,
+    @SerializedName("Error") val error: String? = null
+)

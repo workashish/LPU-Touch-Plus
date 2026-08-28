@@ -44,6 +44,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun AppLockGate(
     sessionStore: SessionStore,
+    authRepository: com.lputouch.app.data.repo.AuthRepository,
     onUnlocked: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -133,7 +134,7 @@ fun AppLockGate(
                 Button(
                     onClick = {
                         scope.launch {
-                            sessionStore.logout()
+                            authRepository.logout()  // also clears DB cache
                             // Note: loggedIn flow will emit false, triggering navigation to login.
                             // We do NOT call onUnlocked() here — that would briefly show the main screen.
                         }

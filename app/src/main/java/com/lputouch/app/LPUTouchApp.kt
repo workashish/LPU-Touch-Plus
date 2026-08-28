@@ -34,7 +34,7 @@ class LPUTouchApp : Application(), ImageLoaderFactory {
         val mobileApi = ApiClient.mobileApi(sessionStore)
         val umsApi = ApiClient.umsApi(sessionStore)
         val happeningsApi = ApiClient.happeningsApi()
-        authRepository = AuthRepository(mobileApi, umsApi, sessionStore)
+        authRepository = AuthRepository(mobileApi, umsApi, sessionStore, db)
         studentRepository = StudentRepository(this, mobileApi, umsApi, happeningsApi, sessionStore, db, authRepository)
 
         // Restore the in-memory JWT cache so authenticated calls work after process restart.

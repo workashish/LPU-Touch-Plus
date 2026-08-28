@@ -50,6 +50,7 @@ class MainActivity : FragmentActivity() {
                     if (showGate) {
                         AppLockGate(
                             sessionStore = app.sessionStore,
+                            authRepository = app.authRepository,
                             onUnlocked = { unlocked = true },
                         )
                     } else if (loggedIn != null) {
